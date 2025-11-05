@@ -12,10 +12,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Trash2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Save, Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Minus } from 'lucide-react';
 
 const formSchema = z.object({
   label: z.string().optional(),
+  direction: z.enum(['forward', 'backward', 'both', 'none']).default('forward'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -26,10 +34,11 @@ interface EdgeLabelDialogProps {
   edge: {
     id: string;
     label?: string;
+    direction?: string;
     sourceId: string;
     targetId: string;
   } | null;
-  onSave: (data: { id: string; label?: string }) => void;
+  onSave: (data: { id: string; label?: string; direction?: string }) => void;
   onDelete: (id: string) => void;
 }
 
@@ -44,6 +53,7 @@ export default function EdgeLabelDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       label: '',
+      direction: 'forward',
     },
   });
 
@@ -51,13 +61,14 @@ export default function EdgeLabelDialog({
     if (edge) {
       form.reset({
         label: edge.label || '',
+        direction: (edge.direction || 'forward') as 'forward' | 'backward' | 'both' | 'none',
       });
     }
   }, [edge, form]);
 
   const handleSubmit = (data: FormData) => {
     if (edge) {
-      onSave({ id: edge.id, label: data.label });
+      onSave({ id: edge.id, label: data.label, direction: data.direction });
       onOpenChange(false);
     }
   };
@@ -89,6 +100,47 @@ export default function EdgeLabelDialog({
             />
             <p className="text-xs text-muted-foreground">
               この2人の関係性を表すラベルを入力してください
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edge-direction">方向性</Label>
+            <Select
+              value={form.watch('direction')}
+              onValueChange={(value) => form.setValue('direction', value as 'forward' | 'backward' | 'both' | 'none')}
+            >
+              <SelectTrigger id="edge-direction" data-testid="select-edge-direction">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="forward">
+                  <div className="flex items-center gap-2">
+                    <ArrowRight className="w-4 h-4" />
+                    <span>片方向（→）</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="backward">
+                  <div className="flex items-center gap-2">
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>逆方向（←）</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="both">
+                  <div className="flex items-center gap-2">
+                    <ArrowLeftRight className="w-4 h-4" />
+                    <span>両方向（↔）</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="none">
+                  <div className="flex items-center gap-2">
+                    <Minus className="w-4 h-4" />
+                    <span>方向なし（—）</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              関係性の向きを選択してください
             </p>
           </div>
 

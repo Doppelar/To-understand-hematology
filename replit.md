@@ -153,3 +153,9 @@ Preferred communication style: Simple, everyday language.
   - Real-time filtering by specialty and region
   - Searchable directory list with avatar, name, facility, and badges
   - Bidirectional sync: selecting people from directory displays them on the map
+- **Edge Directionality & Sidebar Toggle**:
+  - Added direction field to edges (forward →, backward ←, both ↔, none —)
+  - EdgeLabelDialog now includes direction selector with visual icons
+  - React Flow edges display appropriate arrow markers based on direction
+  - Sidebar toggle button for mobile/small screen optimization (PanelLeftClose/PanelLeft icons)
+  - Conditional sidebar rendering to maximize map viewing area

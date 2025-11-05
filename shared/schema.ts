@@ -25,6 +25,7 @@ export const edges = pgTable("edges", {
   sourceId: varchar("source_id").notNull(),
   targetId: varchar("target_id").notNull(),
   label: text("label"),
+  direction: text("direction").notNull().default("forward"),
 });
 
 export const insertNodeSchema = createInsertSchema(nodes).omit({

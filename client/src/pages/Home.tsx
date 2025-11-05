@@ -28,6 +28,7 @@ export default function Home() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [edgeLabelDialogOpen, setEdgeLabelDialogOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const [activeSpecialties, setActiveSpecialties] = useState<string[]>([]);
   const [activeRegions, setActiveRegions] = useState<string[]>([]);
 
@@ -62,7 +63,7 @@ export default function Home() {
   });
 
   const updateEdgeMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { label?: string } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: { label?: string; direction?: string } }) => {
       return apiRequest('PATCH', `/api/edges/${id}`, data);
     },
     onSuccess: () => {
@@ -110,13 +111,31 @@ export default function Home() {
         selectedNodeIds.includes(dbEdge.sourceId) &&
         selectedNodeIds.includes(dbEdge.targetId)
       )
-      .map((dbEdge) => ({
-        id: dbEdge.id,
-        source: dbEdge.sourceId,
-        target: dbEdge.targetId,
-        label: dbEdge.label || undefined,
-        animated: true,
-      }));
+      .map((dbEdge) => {
+        const direction = dbEdge.direction || 'forward';
+        const markerEnd = (direction === 'forward' || direction === 'both') ? { type: 'arrowclosed' as const } : undefined;
+        const markerStart = (direction === 'backward' || direction === 'both') ? { type: 'arrowclosed' as const } : undefined;
+
+        return {
+          id: dbEdge.id,
+          source: dbEdge.sourceId,
+          target: dbEdge.targetId,
+          label: dbEdge.label || undefined,
+          animated: direction !== 'none',
+          type: 'default',
+          interactionWidth: 20,
+          markerEnd,
+          markerStart,
+          style: { 
+            cursor: 'pointer',
+            strokeWidth: 2,
+          },
+          labelStyle: { fill: 'hsl(var(--foreground))', fontWeight: 500 },
+          labelBgStyle: { fill: 'hsl(var(--background))' },
+          labelBgPadding: [8, 4] as [number, number],
+          labelBgBorderRadius: 4,
+        };
+      });
   }, [dbEdges, selectedNodeIds]);
 
   const availableSpecialties = useMemo(() => {
@@ -253,8 +272,8 @@ export default function Home() {
   );
 
   const handleSaveEdgeLabel = useCallback(
-    (data: { id: string; label?: string }) => {
-      updateEdgeMutation.mutate({ id: data.id, data: { label: data.label } });
+    (data: { id: string; label?: string; direction?: string }) => {
+      updateEdgeMutation.mutate({ id: data.id, data: { label: data.label, direction: data.direction } });
     },
     [updateEdgeMutation]
   );
@@ -267,49 +286,58 @@ export default function Home() {
     [deleteEdgeMutation]
   );
 
+  const handleSaveMap = useCallback(() => {
+    toast({
+      title: 'マップを保存しました',
+      description: 'すべての変更が保存されました',
+    });
+  }, [toast]);
+
   return (
     <ReactFlowProvider>
       <div className="flex h-full w-full overflow-hidden">
-        <aside className="w-80 border-r border-border bg-card flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Network className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-semibold text-foreground">インフルエンサーマップ</h1>
+        {sidebarVisible && (
+          <aside className="w-80 border-r border-border bg-card flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Network className="w-6 h-6 text-primary" />
+                <h1 className="text-xl font-semibold text-foreground">インフルエンサーマップ</h1>
+              </div>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            <Accordion type="multiple" defaultValue={['select', 'filter']} className="space-y-2">
-              <AccordionItem value="select">
-                <AccordionTrigger className="text-base font-medium">
-                  名鑑から選択
-                </AccordionTrigger>
-                <AccordionContent>
-                  <NodeSelector
-                    selectedNodeIds={selectedNodeIds}
-                    onSelectNode={handleSelectNode}
-                  />
-                </AccordionContent>
-              </AccordionItem>
+            <div className="flex-1 overflow-y-auto p-4">
+              <Accordion type="multiple" defaultValue={['select', 'filter']} className="space-y-2">
+                <AccordionItem value="select">
+                  <AccordionTrigger className="text-base font-medium">
+                    名鑑から選択
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <NodeSelector
+                      selectedNodeIds={selectedNodeIds}
+                      onSelectNode={handleSelectNode}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
 
-              <AccordionItem value="filter">
-                <AccordionTrigger className="text-base font-medium">
-                  フィルター
-                </AccordionTrigger>
-                <AccordionContent>
-                  <FilterBar
-                    activeSpecialties={activeSpecialties}
-                    activeRegions={activeRegions}
-                    availableSpecialties={availableSpecialties}
-                    onToggleSpecialty={handleToggleSpecialty}
-                    onToggleRegion={handleToggleRegion}
-                    onClearAll={handleClearFilters}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </aside>
+                <AccordionItem value="filter">
+                  <AccordionTrigger className="text-base font-medium">
+                    フィルター
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <FilterBar
+                      activeSpecialties={activeSpecialties}
+                      activeRegions={activeRegions}
+                      availableSpecialties={availableSpecialties}
+                      onToggleSpecialty={handleToggleSpecialty}
+                      onToggleRegion={handleToggleRegion}
+                      onClearAll={handleClearFilters}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          </aside>
+        )}
 
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-hidden relative">
@@ -321,6 +349,9 @@ export default function Home() {
               onNodeClick={handleNodeClick}
               onEdgeClick={handleEdgeClick}
               onConnect={handleConnect}
+              onSave={handleSaveMap}
+              onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
+              sidebarVisible={sidebarVisible}
               showLabels={showLabels}
               onToggleLabels={() => setShowLabels(!showLabels)}
             />
@@ -353,6 +384,7 @@ export default function Home() {
           edge={selectedEdge ? {
             ...selectedEdge,
             label: selectedEdge.label || undefined,
+            direction: selectedEdge.direction || 'forward',
           } : null}
           onSave={handleSaveEdgeLabel}
           onDelete={handleDeleteEdge}

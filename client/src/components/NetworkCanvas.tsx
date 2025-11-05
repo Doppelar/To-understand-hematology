@@ -16,7 +16,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import CustomNode, { CustomNodeData } from './CustomNode';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize2, Eye, EyeOff } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Eye, EyeOff, Save, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 type NetworkCanvasProps = {
   nodes: Node<CustomNodeData>[];
@@ -26,6 +26,9 @@ type NetworkCanvasProps = {
   onNodeClick: (node: Node<CustomNodeData>) => void;
   onEdgeClick?: (edgeId: string) => void;
   onConnect: (connection: Connection) => void;
+  onSave?: () => void;
+  onToggleSidebar?: () => void;
+  sidebarVisible?: boolean;
   showLabels: boolean;
   onToggleLabels: () => void;
 };
@@ -42,6 +45,9 @@ export default function NetworkCanvas({
   onNodeClick,
   onEdgeClick,
   onConnect,
+  onSave,
+  onToggleSidebar,
+  sidebarVisible = true,
   showLabels,
   onToggleLabels,
 }: NetworkCanvasProps) {
@@ -132,6 +138,27 @@ export default function NetworkCanvas({
       </ReactFlow>
 
       <div className="absolute top-4 right-4 flex gap-2 z-10">
+        {onToggleSidebar && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onToggleSidebar}
+            data-testid="button-toggle-sidebar"
+            title={sidebarVisible ? 'サイドバーを隠す' : 'サイドバーを表示'}
+          >
+            {sidebarVisible ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
+          </Button>
+        )}
+        {onSave && (
+          <Button
+            variant="default"
+            onClick={onSave}
+            data-testid="button-save-map"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            保存
+          </Button>
+        )}
         <Button
           variant="outline"
           size="icon"

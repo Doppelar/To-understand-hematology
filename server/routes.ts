@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { z } from "zod";
 import { insertNodeSchema, insertEdgeSchema, insertSocietySchema, insertConferenceSchema, insertSocietyOfficialSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
@@ -119,7 +120,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/edges/:id", async (req, res) => {
     try {
-      const edge = await storage.updateEdge(req.params.id, req.body);
+      const updateSchema = z.object({
+        label: z.string().optional(),
+        direction: z.enum(['forward', 'backward', 'both', 'none']).optional(),
+      });
+      const data = updateSchema.parse(req.body);
+      const edge = await storage.updateEdge(req.params.id, data);
       if (!edge) {
         return res.status(404).json({ error: "Edge not found" });
       }
