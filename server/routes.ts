@@ -335,6 +335,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/society-officials/:id", async (req, res) => {
+    try {
+      const data = insertSocietyOfficialSchema.partial().parse(req.body);
+      const official = await storage.updateSocietyOfficial(req.params.id, data);
+      if (!official) {
+        return res.status(404).json({ error: "Society official not found" });
+      }
+      res.json(official);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid society official data" });
+    }
+  });
+
   app.delete("/api/society-officials/:id", async (req, res) => {
     try {
       const success = await storage.deleteSocietyOfficial(req.params.id);

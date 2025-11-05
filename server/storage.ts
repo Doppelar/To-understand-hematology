@@ -49,6 +49,7 @@ export interface IStorage {
   getAllSocietyOfficials(): Promise<SocietyOfficial[]>;
   getSocietyOfficialsBySociety(societyId: string): Promise<SocietyOfficial[]>;
   createSocietyOfficial(official: InsertSocietyOfficial): Promise<SocietyOfficial>;
+  updateSocietyOfficial(id: string, official: Partial<InsertSocietyOfficial>): Promise<SocietyOfficial | undefined>;
   deleteSocietyOfficial(id: string): Promise<boolean>;
 }
 
@@ -124,7 +125,8 @@ export class MemStorage implements IStorage {
       id,
       sourceId: insertEdge.sourceId,
       targetId: insertEdge.targetId,
-      label: insertEdge.label ?? null
+      label: insertEdge.label ?? null,
+      direction: insertEdge.direction ?? 'forward'
     };
     this.edges.set(id, edge);
     return edge;
@@ -195,6 +197,7 @@ export class MemStorage implements IStorage {
       year: insertConference.year,
       number: insertConference.number ?? null,
       title: insertConference.title,
+      theme: insertConference.theme ?? null,
       location: insertConference.location ?? null,
       president: insertConference.president ?? null,
       date: insertConference.date ?? null
@@ -235,10 +238,20 @@ export class MemStorage implements IStorage {
       societyId: insertOfficial.societyId,
       nodeId: insertOfficial.nodeId,
       position: insertOfficial.position,
-      term: insertOfficial.term ?? null
+      term: insertOfficial.term ?? null,
+      institution: insertOfficial.institution ?? null
     };
     this.societyOfficials.set(id, official);
     return official;
+  }
+
+  async updateSocietyOfficial(id: string, updates: Partial<InsertSocietyOfficial>): Promise<SocietyOfficial | undefined> {
+    const official = this.societyOfficials.get(id);
+    if (!official) return undefined;
+    
+    const updatedOfficial = { ...official, ...updates };
+    this.societyOfficials.set(id, updatedOfficial);
+    return updatedOfficial;
   }
 
   async deleteSocietyOfficial(id: string): Promise<boolean> {
@@ -363,6 +376,11 @@ export class DatabaseStorage implements IStorage {
   async createSocietyOfficial(insertOfficial: InsertSocietyOfficial): Promise<SocietyOfficial> {
     const [official] = await db.insert(societyOfficials).values(insertOfficial).returning();
     return official;
+  }
+
+  async updateSocietyOfficial(id: string, updates: Partial<InsertSocietyOfficial>): Promise<SocietyOfficial | undefined> {
+    const [official] = await db.update(societyOfficials).set(updates).where(eq(societyOfficials.id, id)).returning();
+    return official || undefined;
   }
 
   async deleteSocietyOfficial(id: string): Promise<boolean> {
