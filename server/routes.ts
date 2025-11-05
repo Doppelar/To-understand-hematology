@@ -157,6 +157,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all societies with their conferences and officials
+  app.get("/api/societies-with-relations", async (req, res) => {
+    try {
+      const societies = await storage.getAllSocieties();
+      
+      const societiesWithRelations = await Promise.all(
+        societies.map(async (society) => {
+          const conferences = await storage.getConferencesBySociety(society.id);
+          const officials = await storage.getSocietyOfficialsBySociety(society.id);
+          
+          // Fetch node data for each official
+          const officialsWithNodeData = await Promise.all(
+            officials.map(async (official) => {
+              const node = await storage.getNode(official.nodeId);
+              return {
+                id: official.id,
+                name: node?.name || '',
+                position: official.position,
+                term: official.term || '',
+                photoUrl: node?.photoUrl || undefined,
+              };
+            })
+          );
+          
+          return {
+            id: society.id,
+            name: society.name,
+            shortName: society.shortName,
+            description: society.description || '',
+            conferences: conferences.map(c => ({
+              id: c.id,
+              year: c.year,
+              number: c.number || '',
+              title: c.title,
+              theme: c.theme || undefined,
+              location: c.location || '',
+              president: c.president || '',
+              date: c.date || '',
+            })),
+            officials: officialsWithNodeData,
+          };
+        })
+      );
+      
+      res.json(societiesWithRelations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch societies with relations" });
+    }
+  });
+
   app.get("/api/societies/:id", async (req, res) => {
     try {
       const society = await storage.getSociety(req.params.id);

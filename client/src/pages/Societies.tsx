@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +25,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Calendar, MapPin, User, Plus, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, User, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import ConferenceForm from '@/components/ConferenceForm';
 
 type Conference = {
@@ -54,195 +57,160 @@ type Society = {
   officials: Official[];
 };
 
-const initialSocieties: Society[] = [
-  {
-    id: '1',
-    name: '日本血液学会',
-    shortName: 'JSH',
-    description: '血液学の進歩と普及を図り、国民の健康と福祉に貢献することを目的とする学会',
-    conferences: [
-      {
-        id: 'c1',
-        year: '2024',
-        number: '第86回',
-        title: '日本血液学会学術集会',
-        location: '東京',
-        president: '田中太郎',
-        date: '2024年10月11日-13日',
-      },
-      {
-        id: 'c2',
-        year: '2023',
-        number: '第85回',
-        title: '日本血液学会学術集会',
-        location: '大阪',
-        president: '佐藤花子',
-        date: '2023年10月13日-15日',
-      },
-      {
-        id: 'c3',
-        year: '2022',
-        number: '第84回',
-        title: '日本血液学会学術集会',
-        location: '名古屋',
-        president: '鈴木一郎',
-        date: '2022年10月14日-16日',
-      },
-    ],
-    officials: [
-      {
-        id: 'o1',
-        name: '田中太郎',
-        position: '理事長',
-        term: '2023-2025',
-      },
-      {
-        id: 'o2',
-        name: '佐藤花子',
-        position: '副理事長',
-        term: '2023-2025',
-      },
-      {
-        id: 'o3',
-        name: '鈴木一郎',
-        position: '理事',
-        term: '2023-2025',
-      },
-    ],
-  },
-  {
-    id: '2',
-    name: '日本造血細胞移植学会',
-    shortName: 'JSHCT',
-    description: '造血細胞移植の発展と患者の治療成績向上を目指す学会',
-    conferences: [
-      {
-        id: 'c4',
-        year: '2024',
-        number: '第46回',
-        title: '日本造血細胞移植学会総会',
-        location: '福岡',
-        president: '山田次郎',
-        date: '2024年3月7日-9日',
-      },
-      {
-        id: 'c5',
-        year: '2023',
-        number: '第45回',
-        title: '日本造血細胞移植学会総会',
-        location: '仙台',
-        president: '高橋三郎',
-        date: '2023年3月9日-11日',
-      },
-    ],
-    officials: [
-      {
-        id: 'o4',
-        name: '山田次郎',
-        position: '理事長',
-        term: '2022-2024',
-      },
-      {
-        id: 'o5',
-        name: '高橋三郎',
-        position: '理事',
-        term: '2022-2024',
-      },
-    ],
-  },
-  {
-    id: '3',
-    name: '日本臨床腫瘍学会',
-    shortName: 'JSMO',
-    description: '悪性腫瘍の臨床・研究の発展を目指す学会',
-    conferences: [
-      {
-        id: 'c6',
-        year: '2024',
-        number: '第22回',
-        title: '日本臨床腫瘍学会学術集会',
-        location: '横浜',
-        president: '伊藤四郎',
-        date: '2024年7月18日-20日',
-      },
-    ],
-    officials: [
-      {
-        id: 'o6',
-        name: '伊藤四郎',
-        position: '理事長',
-        term: '2023-2025',
-      },
-    ],
-  },
-];
-
 export default function Societies() {
-  const [societies, setSocieties] = useState<Society[]>(initialSocieties);
-  const [selectedSociety, setSelectedSociety] = useState('1');
+  const { toast } = useToast();
+  const [selectedSociety, setSelectedSociety] = useState('');
   const [addConferenceDialogOpen, setAddConferenceDialogOpen] = useState(false);
   const [editingConference, setEditingConference] = useState<Conference & { societyId: string } | null>(null);
   const [deletingConference, setDeletingConference] = useState<{ id: string; societyId: string } | null>(null);
 
+  // Fetch societies with relations
+  const { data: societies = [], isLoading, error } = useQuery<Society[]>({
+    queryKey: ['/api/societies-with-relations'],
+  });
+
+  // Set initial selected society when data loads
+  useEffect(() => {
+    if (societies.length > 0 && !selectedSociety) {
+      setSelectedSociety(societies[0].id);
+    }
+  }, [societies, selectedSociety]);
+
   const currentSociety = societies.find(s => s.id === selectedSociety);
 
-  const handleAddConference = (data: any) => {
-    const newConference: Conference = {
-      id: `c${Date.now()}`,
-      year: data.year,
-      number: data.number || '',
-      title: data.title,
-      theme: data.theme || undefined,
-      location: data.location || '',
-      president: data.president || '',
-      date: data.date || '',
-    };
+  // Add conference mutation
+  const addConferenceMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('/api/conferences', {
+        method: 'POST',
+        body: JSON.stringify({
+          societyId: selectedSociety,
+          year: data.year,
+          number: data.number || '',
+          title: data.title,
+          theme: data.theme || null,
+          location: data.location || '',
+          president: data.president || '',
+          date: data.date || '',
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setAddConferenceDialogOpen(false);
+      toast({
+        title: '学術集会を追加しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '学術集会の追加に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
 
-    setSocieties(societies.map(s =>
-      s.id === selectedSociety
-        ? { ...s, conferences: [...s.conferences, newConference] }
-        : s
-    ));
-    setAddConferenceDialogOpen(false);
+  // Edit conference mutation
+  const editConferenceMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest(`/api/conferences/${data.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          year: data.year,
+          number: data.number || '',
+          title: data.title,
+          theme: data.theme || null,
+          location: data.location || '',
+          president: data.president || '',
+          date: data.date || '',
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setEditingConference(null);
+      toast({
+        title: '学術集会を更新しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '学術集会の更新に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete conference mutation
+  const deleteConferenceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/conferences/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setDeletingConference(null);
+      toast({
+        title: '学術集会を削除しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '学術集会の削除に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleAddConference = (data: any) => {
+    addConferenceMutation.mutate(data);
   };
 
   const handleEditConference = (data: any) => {
-    if (!data.id) return;
-
-    setSocieties(societies.map(s =>
-      s.id === editingConference?.societyId
-        ? {
-            ...s,
-            conferences: s.conferences.map(c =>
-              c.id === data.id
-                ? {
-                    ...c,
-                    year: data.year,
-                    number: data.number || '',
-                    title: data.title,
-                    theme: data.theme || undefined,
-                    location: data.location || '',
-                    president: data.president || '',
-                    date: data.date || '',
-                  }
-                : c
-            ),
-          }
-        : s
-    ));
-    setEditingConference(null);
+    editConferenceMutation.mutate(data);
   };
 
   const handleDeleteConference = () => {
     if (!deletingConference) return;
-
-    setSocieties(societies.map(s =>
-      s.id === deletingConference.societyId
-        ? { ...s, conferences: s.conferences.filter(c => c.id !== deletingConference.id) }
-        : s
-    ));
-    setDeletingConference(null);
+    deleteConferenceMutation.mutate(deletingConference.id);
   };
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-4">
+        <p className="text-destructive font-medium">学会データの取得に失敗しました</p>
+        <Button onClick={() => window.location.reload()}>再読み込み</Button>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (societies.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-muted-foreground">学会データがありません</p>
+      </div>
+    );
+  }
+
+  if (!selectedSociety) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -255,17 +223,17 @@ export default function Societies() {
 
       <div className="flex-1 overflow-auto p-4">
         <Tabs value={selectedSociety} onValueChange={setSelectedSociety}>
-          <TabsList className="mb-4" data-testid="tabs-societies">
-            {societies.map(society => (
-              <TabsTrigger
-                key={society.id}
-                value={society.id}
-                data-testid={`tab-society-${society.shortName}`}
-              >
-                {society.shortName}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+            <TabsList className="mb-4" data-testid="tabs-societies">
+              {societies.map(society => (
+                <TabsTrigger
+                  key={society.id}
+                  value={society.id}
+                  data-testid={`tab-society-${society.shortName}`}
+                >
+                  {society.shortName}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
           {societies.map(society => (
             <TabsContent key={society.id} value={society.id} className="space-y-4">
