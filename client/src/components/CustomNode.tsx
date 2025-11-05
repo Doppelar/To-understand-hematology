@@ -49,18 +49,11 @@ function CustomNode({ data, selected }: NodeProps<CustomNodeData>) {
                 {position}
               </div>
             )}
-            <div className="flex flex-wrap gap-1 justify-center">
-              {specialty && (
-                <Badge variant="secondary" className="text-xs px-2 py-0 h-5">
-                  {specialty}
-                </Badge>
-              )}
-              {region && (
-                <Badge variant="outline" className="text-xs px-2 py-0 h-5">
-                  {region}
-                </Badge>
-              )}
-            </div>
+            {specialty && (
+              <Badge variant="secondary" className="text-xs px-2 py-0 h-5">
+                {specialty}
+              </Badge>
+            )}
           </div>
         )}
       </div>
