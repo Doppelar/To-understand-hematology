@@ -28,6 +28,7 @@ import {
 import { Calendar, MapPin, User, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ConferenceForm from '@/components/ConferenceForm';
+import OfficialForm from '@/components/OfficialForm';
 
 type Conference = {
   id: string;
@@ -42,9 +43,11 @@ type Conference = {
 
 type Official = {
   id: string;
+  nodeId: string;
   name: string;
   position: string;
   term: string;
+  institution: string;
   photoUrl?: string;
 };
 
@@ -63,6 +66,9 @@ export default function Societies() {
   const [addConferenceDialogOpen, setAddConferenceDialogOpen] = useState(false);
   const [editingConference, setEditingConference] = useState<Conference & { societyId: string } | null>(null);
   const [deletingConference, setDeletingConference] = useState<{ id: string; societyId: string } | null>(null);
+  const [addOfficialDialogOpen, setAddOfficialDialogOpen] = useState(false);
+  const [editingOfficial, setEditingOfficial] = useState<Official & { societyId: string } | null>(null);
+  const [deletingOfficial, setDeletingOfficial] = useState<{ id: string; societyId: string } | null>(null);
 
   // Fetch societies with relations
   const { data: societies = [], isLoading, error } = useQuery<Society[]>({
@@ -158,6 +164,80 @@ export default function Societies() {
     },
   });
 
+  // Add official mutation
+  const addOfficialMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('POST', '/api/society-officials', {
+        societyId: selectedSociety,
+        nodeId: data.nodeId,
+        position: data.position,
+        term: data.term || null,
+        institution: data.institution || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setAddOfficialDialogOpen(false);
+      toast({
+        title: '役員を追加しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '役員の追加に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Edit official mutation
+  const editOfficialMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('PATCH', `/api/society-officials/${data.id}`, {
+        nodeId: data.nodeId,
+        position: data.position,
+        term: data.term || null,
+        institution: data.institution || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setEditingOfficial(null);
+      toast({
+        title: '役員を更新しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '役員の更新に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete official mutation
+  const deleteOfficialMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/society-officials/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setDeletingOfficial(null);
+      toast({
+        title: '役員を削除しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '役員の削除に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleAddConference = (data: any) => {
     addConferenceMutation.mutate(data);
   };
@@ -169,6 +249,19 @@ export default function Societies() {
   const handleDeleteConference = () => {
     if (!deletingConference) return;
     deleteConferenceMutation.mutate(deletingConference.id);
+  };
+
+  const handleAddOfficial = (data: any) => {
+    addOfficialMutation.mutate(data);
+  };
+
+  const handleEditOfficial = (data: any) => {
+    editOfficialMutation.mutate(data);
+  };
+
+  const handleDeleteOfficial = () => {
+    if (!deletingOfficial) return;
+    deleteOfficialMutation.mutate(deletingOfficial.id);
   };
 
   if (error) {
@@ -312,11 +405,18 @@ export default function Societies() {
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
                   <CardTitle className="flex items-center gap-2" data-testid={`heading-officials-${society.shortName}`}>
                     <User className="w-5 h-5" />
                     役員・役職者
                   </CardTitle>
+                  <Button
+                    onClick={() => setAddOfficialDialogOpen(true)}
+                    data-testid={`button-add-official-${society.shortName}`}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    役員を追加
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -325,6 +425,8 @@ export default function Societies() {
                         <TableHead>氏名</TableHead>
                         <TableHead>役職</TableHead>
                         <TableHead>任期</TableHead>
+                        <TableHead>就任機関</TableHead>
+                        <TableHead className="w-[100px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -341,7 +443,30 @@ export default function Societies() {
                             <Badge>{official.position}</Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {official.term}
+                            {official.term || '-'}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {official.institution || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditingOfficial({ ...official, societyId: society.id })}
+                                data-testid={`button-edit-official-${official.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDeletingOfficial({ id: official.id, societyId: society.id })}
+                                data-testid={`button-delete-official-${official.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -396,6 +521,61 @@ export default function Societies() {
             <AlertDialogAction
               onClick={handleDeleteConference}
               data-testid="button-confirm-delete-conference"
+            >
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={addOfficialDialogOpen} onOpenChange={setAddOfficialDialogOpen}>
+        <DialogContent className="max-w-2xl" aria-describedby="add-official-description">
+          <DialogHeader>
+            <DialogTitle>役員を追加</DialogTitle>
+            <p id="add-official-description" className="sr-only">新しい役員を追加するフォーム</p>
+          </DialogHeader>
+          <OfficialForm
+            onSubmit={handleAddOfficial}
+            onCancel={() => setAddOfficialDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingOfficial} onOpenChange={(open) => !open && setEditingOfficial(null)}>
+        <DialogContent className="max-w-2xl" aria-describedby="edit-official-description">
+          <DialogHeader>
+            <DialogTitle>役員を編集</DialogTitle>
+            <p id="edit-official-description" className="sr-only">既存の役員を編集するフォーム</p>
+          </DialogHeader>
+          {editingOfficial && (
+            <OfficialForm
+              initialData={{
+                id: editingOfficial.id,
+                nodeId: editingOfficial.nodeId,
+                position: editingOfficial.position,
+                term: editingOfficial.term || '',
+                institution: editingOfficial.institution || '',
+              }}
+              onSubmit={handleEditOfficial}
+              onCancel={() => setEditingOfficial(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deletingOfficial} onOpenChange={(open) => !open && setDeletingOfficial(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>削除の確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              この役員を削除してもよろしいですか？この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-official">キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteOfficial}
+              data-testid="button-confirm-delete-official"
             >
               削除
             </AlertDialogAction>

@@ -173,9 +173,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const node = await storage.getNode(official.nodeId);
               return {
                 id: official.id,
+                nodeId: official.nodeId,
                 name: node?.name || '',
                 position: official.position,
                 term: official.term || '',
+                institution: official.institution || '',
                 photoUrl: node?.photoUrl || undefined,
               };
             })
