@@ -382,7 +382,19 @@ export default function Directory() {
       <EditNodeDialog
         open={!!editingPerson}
         onOpenChange={(open) => !open && setEditingPerson(null)}
-        node={editingPerson}
+        node={editingPerson ? {
+          ...editingPerson,
+          facilityName: editingPerson.facilityName || undefined,
+          position: editingPerson.position || undefined,
+          career: editingPerson.career || undefined,
+          specialty: editingPerson.specialty || undefined,
+          region: editingPerson.region || undefined,
+          photoUrl: editingPerson.photoUrl || undefined,
+          graduationUniversity: editingPerson.graduationUniversity || undefined,
+          graduationYear: editingPerson.graduationYear || undefined,
+          appointmentDate: editingPerson.appointmentDate || undefined,
+          retirementDate: editingPerson.retirementDate || undefined,
+        } : null}
         onSave={handleEditPerson}
         onDelete={handleDeletePerson}
       />
