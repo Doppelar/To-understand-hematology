@@ -117,6 +117,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/edges/:id", async (req, res) => {
+    try {
+      const edge = await storage.updateEdge(req.params.id, req.body);
+      if (!edge) {
+        return res.status(404).json({ error: "Edge not found" });
+      }
+      res.json(edge);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update edge" });
+    }
+  });
+
   app.delete("/api/edges/:id", async (req, res) => {
     try {
       const success = await storage.deleteEdge(req.params.id);

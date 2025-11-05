@@ -24,6 +24,7 @@ type NetworkCanvasProps = {
   onNodesChange: (changes: NodeChange[]) => Node<CustomNodeData>[];
   onEdgesChange: (changes: EdgeChange[]) => Edge[];
   onNodeClick: (node: Node<CustomNodeData>) => void;
+  onEdgeClick?: (edgeId: string) => void;
   onConnect: (connection: Connection) => void;
   showLabels: boolean;
   onToggleLabels: () => void;
@@ -39,6 +40,7 @@ export default function NetworkCanvas({
   onNodesChange: onNodesChangeProp,
   onEdgesChange: onEdgesChangeProp,
   onNodeClick,
+  onEdgeClick,
   onConnect,
   showLabels,
   onToggleLabels,
@@ -118,6 +120,7 @@ export default function NetworkCanvas({
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
         onNodeClick={(_, node) => onNodeClick(node as Node<CustomNodeData>)}
+        onEdgeClick={(_, edge) => onEdgeClick?.(edge.id)}
         onInit={setReactFlowInstance}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}

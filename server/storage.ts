@@ -29,6 +29,7 @@ export interface IStorage {
   getEdge(id: string): Promise<Edge | undefined>;
   getAllEdges(): Promise<Edge[]>;
   createEdge(edge: InsertEdge): Promise<Edge>;
+  updateEdge(id: string, edge: Partial<InsertEdge>): Promise<Edge | undefined>;
   deleteEdge(id: string): Promise<boolean>;
 
   getSociety(id: string): Promise<Society | undefined>;
@@ -127,6 +128,14 @@ export class MemStorage implements IStorage {
     };
     this.edges.set(id, edge);
     return edge;
+  }
+
+  async updateEdge(id: string, updates: Partial<InsertEdge>): Promise<Edge | undefined> {
+    const edge = this.edges.get(id);
+    if (!edge) return undefined;
+    const updated: Edge = { ...edge, ...updates };
+    this.edges.set(id, updated);
+    return updated;
   }
 
   async deleteEdge(id: string): Promise<boolean> {
@@ -274,6 +283,11 @@ export class DatabaseStorage implements IStorage {
   async createEdge(insertEdge: InsertEdge): Promise<Edge> {
     const [edge] = await db.insert(edges).values(insertEdge).returning();
     return edge;
+  }
+
+  async updateEdge(id: string, updates: Partial<InsertEdge>): Promise<Edge | undefined> {
+    const [edge] = await db.update(edges).set(updates).where(eq(edges.id, id)).returning();
+    return edge || undefined;
   }
 
   async deleteEdge(id: string): Promise<boolean> {

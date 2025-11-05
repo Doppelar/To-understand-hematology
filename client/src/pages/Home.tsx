@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { ReactFlowProvider, Node, Edge, Connection, NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges } from 'reactflow';
 import 'reactflow/dist/style.css';
 import NetworkCanvas from '@/components/NetworkCanvas';
 import NodeSelector from '@/components/NodeSelector';
 import EditNodeDialog from '@/components/EditNodeDialog';
+import EdgeLabelDialog from '@/components/EdgeLabelDialog';
 import FilterBar from '@/components/FilterBar';
 import { CustomNodeData } from '@/components/CustomNode';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,9 @@ export default function Home() {
   const { toast } = useToast();
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedNode, setSelectedNode] = useState<Node<CustomNodeData> | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<DBEdge | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [edgeLabelDialogOpen, setEdgeLabelDialogOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [activeSpecialties, setActiveSpecialties] = useState<string[]>([]);
   const [activeRegions, setActiveRegions] = useState<string[]>([]);
@@ -38,11 +41,7 @@ export default function Home() {
 
   const updateNodeMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<DBNode> }) => {
-      return apiRequest(`/api/nodes/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      return apiRequest('PATCH', `/api/nodes/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/nodes'] });
@@ -51,25 +50,32 @@ export default function Home() {
 
   const createEdgeMutation = useMutation({
     mutationFn: async (data: { sourceId: string; targetId: string }) => {
-      return apiRequest('/api/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/edges', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/edges'] });
       toast({
         title: '関係性を追加しました',
+        description: 'クリックしてラベルを追加できます',
+      });
+    },
+  });
+
+  const updateEdgeMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { label?: string } }) => {
+      return apiRequest('PATCH', `/api/edges/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/edges'] });
+      toast({
+        title: 'ラベルを更新しました',
       });
     },
   });
 
   const deleteEdgeMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/edges/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/edges/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/edges'] });
@@ -235,6 +241,32 @@ export default function Home() {
     setActiveRegions([]);
   }, []);
 
+  const handleEdgeClick = useCallback(
+    (edgeId: string) => {
+      const dbEdge = dbEdges.find((e) => e.id === edgeId);
+      if (dbEdge) {
+        setSelectedEdge(dbEdge);
+        setEdgeLabelDialogOpen(true);
+      }
+    },
+    [dbEdges]
+  );
+
+  const handleSaveEdgeLabel = useCallback(
+    (data: { id: string; label?: string }) => {
+      updateEdgeMutation.mutate({ id: data.id, data: { label: data.label } });
+    },
+    [updateEdgeMutation]
+  );
+
+  const handleDeleteEdge = useCallback(
+    (id: string) => {
+      deleteEdgeMutation.mutate(id);
+      setEdgeLabelDialogOpen(false);
+    },
+    [deleteEdgeMutation]
+  );
+
   return (
     <ReactFlowProvider>
       <div className="flex h-full w-full overflow-hidden">
@@ -287,6 +319,7 @@ export default function Home() {
               onNodesChange={handleNodesChange}
               onEdgesChange={handleEdgesChange}
               onNodeClick={handleNodeClick}
+              onEdgeClick={handleEdgeClick}
               onConnect={handleConnect}
               showLabels={showLabels}
               onToggleLabels={() => setShowLabels(!showLabels)}
@@ -312,6 +345,17 @@ export default function Home() {
           }
           onSave={handleSaveNode}
           onDelete={handleDeleteNode}
+        />
+
+        <EdgeLabelDialog
+          open={edgeLabelDialogOpen}
+          onOpenChange={setEdgeLabelDialogOpen}
+          edge={selectedEdge ? {
+            ...selectedEdge,
+            label: selectedEdge.label || undefined,
+          } : null}
+          onSave={handleSaveEdgeLabel}
+          onDelete={handleDeleteEdge}
         />
       </div>
     </ReactFlowProvider>
