@@ -68,6 +68,7 @@ export const societyOfficials = pgTable("society_officials", {
   nodeId: varchar("node_id").notNull(),
   position: text("position").notNull(),
   term: text("term"),
+  institution: text("institution"),
 });
 
 export const insertSocietySchema = createInsertSchema(societies).omit({
