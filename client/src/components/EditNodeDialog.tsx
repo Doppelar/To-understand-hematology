@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Upload, Save, Trash2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { MEDICAL_UNIVERSITIES } from '@shared/universities';
 
 const formSchema = z.object({
   name: z.string().min(1, '氏名を入力してください'),
@@ -78,6 +79,12 @@ export default function EditNodeDialog({
       setPhotoPreview(node.photoUrl);
     }
   }, [node, form]);
+
+  const selectedRegion = form.watch('region');
+  const availableUniversities = useMemo(() => {
+    if (!selectedRegion) return [];
+    return MEDICAL_UNIVERSITIES[selectedRegion] || [];
+  }, [selectedRegion]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,13 +157,59 @@ export default function EditNodeDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-facilityName">施設名</Label>
-            <Input
-              id="edit-facilityName"
-              {...form.register('facilityName')}
-              placeholder="例: 東京大学病院"
-              data-testid="input-edit-facility"
-            />
+            <Label htmlFor="edit-region">地域</Label>
+            <Select
+              onValueChange={(value) => {
+                form.setValue('region', value);
+              }}
+              value={form.watch('region')}
+            >
+              <SelectTrigger data-testid="select-edit-region">
+                <SelectValue placeholder="選択してください" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="北海道">北海道</SelectItem>
+                <SelectItem value="東北">東北</SelectItem>
+                <SelectItem value="関東">関東</SelectItem>
+                <SelectItem value="中部">中部</SelectItem>
+                <SelectItem value="関西">関西</SelectItem>
+                <SelectItem value="中国">中国</SelectItem>
+                <SelectItem value="四国">四国</SelectItem>
+                <SelectItem value="九州">九州</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-facilityName">施設名（大学）</Label>
+            {selectedRegion && availableUniversities.length > 0 ? (
+              <Select
+                onValueChange={(value) => form.setValue('facilityName', value)}
+                value={form.watch('facilityName')}
+              >
+                <SelectTrigger data-testid="select-edit-facility">
+                  <SelectValue placeholder="大学を選択" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {availableUniversities.map((university) => (
+                    <SelectItem key={university} value={university}>
+                      {university}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="edit-facilityName"
+                {...form.register('facilityName')}
+                placeholder="先に地域を選択してください"
+                disabled={!selectedRegion}
+                data-testid="input-edit-facility"
+              />
+            )}
+            <p className="text-xs text-muted-foreground">
+              地域を選択すると、医学部のある大学を選べます
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -183,27 +236,6 @@ export default function EditNodeDialog({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-region">地域</Label>
-            <Select
-              onValueChange={(value) => form.setValue('region', value)}
-              value={form.watch('region')}
-            >
-              <SelectTrigger data-testid="select-edit-region">
-                <SelectValue placeholder="選択してください" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="北海道">北海道</SelectItem>
-                <SelectItem value="東北">東北</SelectItem>
-                <SelectItem value="関東">関東</SelectItem>
-                <SelectItem value="中部">中部</SelectItem>
-                <SelectItem value="関西">関西</SelectItem>
-                <SelectItem value="中国">中国</SelectItem>
-                <SelectItem value="四国">四国</SelectItem>
-                <SelectItem value="九州">九州</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-career">経歴</Label>
