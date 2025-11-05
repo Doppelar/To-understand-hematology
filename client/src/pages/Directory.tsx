@@ -13,8 +13,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, MapPin, Network } from 'lucide-react';
+import { Search, MapPin, Network, Plus, Edit, Trash2 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import AddNodeForm from '@/components/AddNodeForm';
+import EditNodeDialog from '@/components/EditNodeDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import businessPerson from '@assets/generated_images/Professional_Japanese_businessperson_portrait_f0615887.png';
 import medicalProfessional from '@assets/generated_images/Japanese_medical_professional_portrait_c3b51456.png';
 import researcher from '@assets/generated_images/Japanese_researcher_portrait_dcaf188f.png';
@@ -24,12 +37,13 @@ type Person = {
   name: string;
   facilityName: string;
   position?: string;
+  career?: string;
   specialty?: string;
   region?: string;
   photoUrl?: string;
 };
 
-const mockPeople: Person[] = [
+const initialPeople: Person[] = [
   {
     id: '1',
     name: '田中太郎',
@@ -60,17 +74,21 @@ const mockPeople: Person[] = [
 ];
 
 export default function Directory() {
+  const [people, setPeople] = useState<Person[]>(initialPeople);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
-  const specialties = Array.from(new Set(mockPeople.map(p => p.specialty).filter(Boolean)));
-  const regions = Array.from(new Set(mockPeople.map(p => p.region).filter(Boolean)));
+  const specialties = Array.from(new Set(people.map(p => p.specialty).filter(Boolean)));
+  const regions = Array.from(new Set(people.map(p => p.region).filter(Boolean)));
 
   const filteredPeople = useMemo(() => {
-    return mockPeople.filter(person => {
+    return people.filter(person => {
       const matchesSearch = !searchQuery || 
         person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         person.facilityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -81,7 +99,7 @@ export default function Directory() {
 
       return matchesSearch && matchesSpecialty && matchesRegion;
     });
-  }, [searchQuery, selectedSpecialty, selectedRegion]);
+  }, [people, searchQuery, selectedSpecialty, selectedRegion]);
 
   const togglePersonSelection = (personId: string) => {
     const newSelection = new Set(selectedPeople);
@@ -105,22 +123,63 @@ export default function Directory() {
     setSelectedPeople(new Set());
   };
 
+  const handleAddPerson = (data: any) => {
+    const newPerson: Person = {
+      id: `${Date.now()}`,
+      name: data.name,
+      facilityName: data.facilityName || '',
+      position: data.position,
+      career: data.career,
+      specialty: data.specialty,
+      region: data.region,
+      photoUrl: data.photoUrl,
+    };
+    setPeople([...people, newPerson]);
+    setAddDialogOpen(false);
+  };
+
+  const handleEditPerson = (data: any) => {
+    setPeople(people.map(p => p.id === data.id ? {
+      ...p,
+      name: data.name,
+      facilityName: data.facilityName || '',
+      position: data.position,
+      career: data.career,
+      specialty: data.specialty,
+      region: data.region,
+      photoUrl: data.photoUrl,
+    } : p));
+    setEditingPerson(null);
+  };
+
+  const handleDeletePerson = (id: string) => {
+    setPeople(people.filter(p => p.id !== id));
+    setDeletingPersonId(null);
+    setEditingPerson(null);
+  };
+
   return (
     <div className="h-full flex flex-col bg-background">
       <header className="border-b p-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-foreground" data-testid="heading-directory">名鑑</h1>
-          {selectedPeople.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground" data-testid="text-selected-count">
-                {selectedPeople.size}名選択中
-              </span>
-              <Button onClick={handleGenerateMap} data-testid="button-generate-map">
-                <Network className="w-4 h-4 mr-2" />
-                マップを生成
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {selectedPeople.size > 0 && (
+              <>
+                <span className="text-sm text-muted-foreground" data-testid="text-selected-count">
+                  {selectedPeople.size}名選択中
+                </span>
+                <Button onClick={handleGenerateMap} data-testid="button-generate-map">
+                  <Network className="w-4 h-4 mr-2" />
+                  マップを生成
+                </Button>
+              </>
+            )}
+            <Button onClick={() => setAddDialogOpen(true)} data-testid="button-add-person">
+              <Plus className="w-4 h-4 mr-2" />
+              新規追加
+            </Button>
+          </div>
         </div>
 
         <div className="flex gap-4 flex-wrap">
@@ -194,17 +253,20 @@ export default function Directory() {
                   <TableHead>役職</TableHead>
                   <TableHead>専門領域</TableHead>
                   <TableHead>地域</TableHead>
+                  <TableHead className="w-24">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPeople.map(person => (
                   <TableRow
                     key={person.id}
-                    className="hover-elevate cursor-pointer"
-                    onClick={() => togglePersonSelection(person.id)}
+                    className="hover-elevate"
                     data-testid={`row-person-${person.id}`}
                   >
-                    <TableCell>
+                    <TableCell onClick={(e) => {
+                      e.stopPropagation();
+                      togglePersonSelection(person.id);
+                    }}>
                       <Checkbox
                         checked={selectedPeople.has(person.id)}
                         onCheckedChange={() => togglePersonSelection(person.id)}
@@ -228,6 +290,32 @@ export default function Directory() {
                     <TableCell className="text-muted-foreground">
                       {person.region}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPerson(person);
+                          }}
+                          data-testid={`button-edit-${person.id}`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingPersonId(person.id);
+                          }}
+                          data-testid={`button-delete-${person.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -235,6 +323,43 @@ export default function Directory() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>新規追加</DialogTitle>
+          </DialogHeader>
+          <AddNodeForm onSubmit={handleAddPerson} />
+        </DialogContent>
+      </Dialog>
+
+      <EditNodeDialog
+        open={!!editingPerson}
+        onOpenChange={(open) => !open && setEditingPerson(null)}
+        node={editingPerson}
+        onSave={handleEditPerson}
+        onDelete={handleDeletePerson}
+      />
+
+      <AlertDialog open={!!deletingPersonId} onOpenChange={(open) => !open && setDeletingPersonId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>削除の確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              この人物を削除してもよろしいですか？この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingPersonId && handleDeletePerson(deletingPersonId)}
+              data-testid="button-confirm-delete"
+            >
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

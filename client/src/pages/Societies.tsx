@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Table,
@@ -11,7 +12,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Calendar, MapPin, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Calendar, MapPin, User, Plus, Edit, Trash2 } from 'lucide-react';
+import ConferenceForm from '@/components/ConferenceForm';
 
 type Conference = {
   id: string;
@@ -40,7 +53,7 @@ type Society = {
   officials: Official[];
 };
 
-const mockSocieties: Society[] = [
+const initialSocieties: Society[] = [
   {
     id: '1',
     name: '日本血液学会',
@@ -164,9 +177,69 @@ const mockSocieties: Society[] = [
 ];
 
 export default function Societies() {
+  const [societies, setSocieties] = useState<Society[]>(initialSocieties);
   const [selectedSociety, setSelectedSociety] = useState('1');
+  const [addConferenceDialogOpen, setAddConferenceDialogOpen] = useState(false);
+  const [editingConference, setEditingConference] = useState<Conference & { societyId: string } | null>(null);
+  const [deletingConference, setDeletingConference] = useState<{ id: string; societyId: string } | null>(null);
 
-  const currentSociety = mockSocieties.find(s => s.id === selectedSociety);
+  const currentSociety = societies.find(s => s.id === selectedSociety);
+
+  const handleAddConference = (data: any) => {
+    const newConference: Conference = {
+      id: `c${Date.now()}`,
+      year: data.year,
+      number: data.number || '',
+      title: data.title,
+      location: data.location || '',
+      president: data.president || '',
+      date: data.date || '',
+    };
+
+    setSocieties(societies.map(s =>
+      s.id === selectedSociety
+        ? { ...s, conferences: [...s.conferences, newConference] }
+        : s
+    ));
+    setAddConferenceDialogOpen(false);
+  };
+
+  const handleEditConference = (data: any) => {
+    if (!data.id) return;
+
+    setSocieties(societies.map(s =>
+      s.id === editingConference?.societyId
+        ? {
+            ...s,
+            conferences: s.conferences.map(c =>
+              c.id === data.id
+                ? {
+                    ...c,
+                    year: data.year,
+                    number: data.number || '',
+                    title: data.title,
+                    location: data.location || '',
+                    president: data.president || '',
+                    date: data.date || '',
+                  }
+                : c
+            ),
+          }
+        : s
+    ));
+    setEditingConference(null);
+  };
+
+  const handleDeleteConference = () => {
+    if (!deletingConference) return;
+
+    setSocieties(societies.map(s =>
+      s.id === deletingConference.societyId
+        ? { ...s, conferences: s.conferences.filter(c => c.id !== deletingConference.id) }
+        : s
+    ));
+    setDeletingConference(null);
+  };
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -180,7 +253,7 @@ export default function Societies() {
       <div className="flex-1 overflow-auto p-4">
         <Tabs value={selectedSociety} onValueChange={setSelectedSociety}>
           <TabsList className="mb-4" data-testid="tabs-societies">
-            {mockSocieties.map(society => (
+            {societies.map(society => (
               <TabsTrigger
                 key={society.id}
                 value={society.id}
@@ -191,7 +264,7 @@ export default function Societies() {
             ))}
           </TabsList>
 
-          {mockSocieties.map(society => (
+          {societies.map(society => (
             <TabsContent key={society.id} value={society.id} className="space-y-4">
               <Card>
                 <CardHeader>
@@ -201,11 +274,18 @@ export default function Societies() {
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
                   <CardTitle className="flex items-center gap-2" data-testid={`heading-conferences-${society.shortName}`}>
                     <Calendar className="w-5 h-5" />
                     過去の学術集会
                   </CardTitle>
+                  <Button
+                    onClick={() => setAddConferenceDialogOpen(true)}
+                    data-testid={`button-add-conference-${society.shortName}`}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    学術集会を追加
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -237,6 +317,24 @@ export default function Societies() {
                                 {conference.date}
                               </div>
                             </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingConference({ ...conference, societyId: society.id })}
+                              data-testid={`button-edit-conference-${conference.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletingConference({ id: conference.id, societyId: society.id })}
+                              data-testid={`button-delete-conference-${conference.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -287,6 +385,53 @@ export default function Societies() {
           ))}
         </Tabs>
       </div>
+
+      <Dialog open={addConferenceDialogOpen} onOpenChange={setAddConferenceDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>学術集会を追加</DialogTitle>
+          </DialogHeader>
+          <ConferenceForm
+            onSubmit={handleAddConference}
+            onCancel={() => setAddConferenceDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingConference} onOpenChange={(open) => !open && setEditingConference(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>学術集会を編集</DialogTitle>
+          </DialogHeader>
+          {editingConference && (
+            <ConferenceForm
+              initialData={editingConference}
+              onSubmit={handleEditConference}
+              onCancel={() => setEditingConference(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deletingConference} onOpenChange={(open) => !open && setDeletingConference(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>削除の確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              この学術集会を削除してもよろしいですか？この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-conference">キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConference}
+              data-testid="button-confirm-delete-conference"
+            >
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
