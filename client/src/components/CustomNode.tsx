@@ -49,11 +49,6 @@ function CustomNode({ data, selected }: NodeProps<CustomNodeData>) {
                 {position}
               </div>
             )}
-            {specialty && (
-              <Badge variant="secondary" className="text-xs px-2 py-0 h-5">
-                {specialty}
-              </Badge>
-            )}
           </div>
         )}
       </div>
