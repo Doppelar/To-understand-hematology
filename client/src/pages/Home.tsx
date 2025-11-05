@@ -33,8 +33,11 @@ export default function Home() {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_NODE_IDS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
+      const parsed = saved ? JSON.parse(saved) : [];
+      console.log('[localStorage] Initializing selectedNodeIds from localStorage:', parsed);
+      return parsed;
+    } catch (error) {
+      console.error('[localStorage] Error reading selectedNodeIds:', error);
       return [];
     }
   });
@@ -76,6 +79,7 @@ export default function Home() {
   });
 
   useEffect(() => {
+    console.log('[localStorage] Saving selectedNodeIds to localStorage:', selectedNodeIds);
     localStorage.setItem(STORAGE_KEYS.SELECTED_NODE_IDS, JSON.stringify(selectedNodeIds));
   }, [selectedNodeIds]);
 

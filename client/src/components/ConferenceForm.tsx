@@ -9,6 +9,7 @@ const formSchema = z.object({
   year: z.string().min(1, '年度を入力してください'),
   number: z.string().optional(),
   title: z.string().min(1, 'タイトルを入力してください'),
+  theme: z.string().optional(),
   location: z.string().optional(),
   president: z.string().optional(),
   date: z.string().optional(),
@@ -29,6 +30,7 @@ export default function ConferenceForm({ initialData, onSubmit, onCancel }: Conf
       year: '',
       number: '',
       title: '',
+      theme: '',
       location: '',
       president: '',
       date: '',
@@ -81,6 +83,16 @@ export default function ConferenceForm({ initialData, onSubmit, onCancel }: Conf
         {form.formState.errors.title && (
           <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="theme">テーマ</Label>
+        <Input
+          id="theme"
+          {...form.register('theme')}
+          placeholder="例: 血液疾患の新しい治療法"
+          data-testid="input-conference-theme"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

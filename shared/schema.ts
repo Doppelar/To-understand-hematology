@@ -56,6 +56,7 @@ export const conferences = pgTable("conferences", {
   year: text("year").notNull(),
   number: text("number"),
   title: text("title").notNull(),
+  theme: text("theme"),
   location: text("location"),
   president: text("president"),
   date: text("date"),

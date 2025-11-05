@@ -31,6 +31,7 @@ type Conference = {
   year: string;
   number: string;
   title: string;
+  theme?: string;
   location: string;
   president: string;
   date: string;
@@ -191,6 +192,7 @@ export default function Societies() {
       year: data.year,
       number: data.number || '',
       title: data.title,
+      theme: data.theme || undefined,
       location: data.location || '',
       president: data.president || '',
       date: data.date || '',
@@ -218,6 +220,7 @@ export default function Societies() {
                     year: data.year,
                     number: data.number || '',
                     title: data.title,
+                    theme: data.theme || undefined,
                     location: data.location || '',
                     president: data.president || '',
                     date: data.date || '',
@@ -303,6 +306,11 @@ export default function Societies() {
                                 {conference.number} {conference.title}
                               </h3>
                             </div>
+                            {conference.theme && (
+                              <p className="text-sm font-medium mb-2" data-testid={`text-conference-theme-${conference.id}`}>
+                                テーマ: {conference.theme}
+                              </p>
+                            )}
                             <div className="flex flex-col gap-1 text-sm text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4" />
