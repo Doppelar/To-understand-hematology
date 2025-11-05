@@ -118,12 +118,14 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
             <SelectValue placeholder="選択してください" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="循環器">循環器</SelectItem>
-            <SelectItem value="呼吸器">呼吸器</SelectItem>
-            <SelectItem value="消化器">消化器</SelectItem>
-            <SelectItem value="神経内科">神経内科</SelectItem>
-            <SelectItem value="小児科">小児科</SelectItem>
-            <SelectItem value="外科">外科</SelectItem>
+            <SelectItem value="MCL">MCL</SelectItem>
+            <SelectItem value="移植">移植</SelectItem>
+            <SelectItem value="悪性リンパ腫">悪性リンパ腫</SelectItem>
+            <SelectItem value="DLBCL">DLBCL</SelectItem>
+            <SelectItem value="FL">FL</SelectItem>
+            <SelectItem value="AML">AML</SelectItem>
+            <SelectItem value="ALL">ALL</SelectItem>
+            <SelectItem value="CML">CML</SelectItem>
             <SelectItem value="その他">その他</SelectItem>
           </SelectContent>
         </Select>

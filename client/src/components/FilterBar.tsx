@@ -9,7 +9,7 @@ type FilterBarProps = {
   onClearAll: () => void;
 };
 
-const SPECIALTIES = ['循環器', '呼吸器', '消化器', '神経内科', '小児科', '外科'];
+const SPECIALTIES = ['MCL', '移植', '悪性リンパ腫', 'DLBCL', 'FL', 'AML', 'ALL', 'CML'];
 const REGIONS = ['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州'];
 
 export default function FilterBar({

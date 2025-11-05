@@ -28,7 +28,7 @@ export default function Home() {
       data: {
         name: '田中太郎',
         facilityName: '東京大学病院',
-        specialty: '循環器',
+        specialty: 'MCL',
         region: '関東',
         photoUrl: medicalProfessional,
         showLabels: true,
@@ -41,7 +41,7 @@ export default function Home() {
       data: {
         name: '佐藤花子',
         facilityName: '大阪市立病院',
-        specialty: '呼吸器',
+        specialty: '移植',
         region: '関西',
         photoUrl: businessPerson,
         showLabels: true,
@@ -54,7 +54,7 @@ export default function Home() {
       data: {
         name: '鈴木一郎',
         facilityName: '名古屋大学',
-        specialty: '神経内科',
+        specialty: '悪性リンパ腫',
         region: '中部',
         photoUrl: researcher,
         showLabels: true,
