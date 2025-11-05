@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 export type CustomNodeData = {
   name: string;
   facilityName?: string;
+  position?: string;
   specialty?: string;
   region?: string;
   photoUrl?: string;
@@ -13,7 +14,7 @@ export type CustomNodeData = {
 };
 
 function CustomNode({ data, selected }: NodeProps<CustomNodeData>) {
-  const { name, facilityName, specialty, region, photoUrl, showLabels = true } = data;
+  const { name, facilityName, position, specialty, region, photoUrl, showLabels = true } = data;
 
   return (
     <div className="group relative">
@@ -41,6 +42,11 @@ function CustomNode({ data, selected }: NodeProps<CustomNodeData>) {
             {facilityName && (
               <div className="text-xs text-muted-foreground text-center truncate w-full">
                 {facilityName}
+              </div>
+            )}
+            {position && (
+              <div className="text-xs text-muted-foreground text-center truncate w-full">
+                {position}
               </div>
             )}
             <div className="flex flex-wrap gap-1 justify-center">

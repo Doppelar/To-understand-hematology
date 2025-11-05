@@ -27,6 +27,7 @@ import { MEDICAL_UNIVERSITIES } from '@shared/universities';
 const formSchema = z.object({
   name: z.string().min(1, '氏名を入力してください'),
   facilityName: z.string().optional(),
+  position: z.string().optional(),
   career: z.string().optional(),
   specialty: z.string().optional(),
   region: z.string().optional(),
@@ -61,6 +62,7 @@ export default function EditNodeDialog({
     defaultValues: {
       name: '',
       facilityName: '',
+      position: '',
       career: '',
       specialty: '',
       region: '',
@@ -72,6 +74,7 @@ export default function EditNodeDialog({
       form.reset({
         name: node.name,
         facilityName: node.facilityName || '',
+        position: node.position || '',
         career: node.career || '',
         specialty: node.specialty || '',
         region: node.region || '',
@@ -210,6 +213,16 @@ export default function EditNodeDialog({
             <p className="text-xs text-muted-foreground">
               地域を選択すると、医学部のある大学を選べます
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-position">役職</Label>
+            <Input
+              id="edit-position"
+              {...form.register('position')}
+              placeholder="例: 教授、准教授、講師など"
+              data-testid="input-edit-position"
+            />
           </div>
 
           <div className="space-y-2">

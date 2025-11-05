@@ -5,7 +5,6 @@ import NetworkCanvas from '@/components/NetworkCanvas';
 import AddNodeForm from '@/components/AddNodeForm';
 import EditNodeDialog from '@/components/EditNodeDialog';
 import FilterBar from '@/components/FilterBar';
-import ThemeToggle from '@/components/ThemeToggle';
 import { CustomNodeData } from '@/components/CustomNode';
 import { Button } from '@/components/ui/button';
 import { Upload, Network } from 'lucide-react';
@@ -107,6 +106,7 @@ export default function Home() {
       data: {
         name: data.name,
         facilityName: data.facilityName,
+        position: data.position,
         specialty: data.specialty,
         region: data.region,
         photoUrl: data.photoUrl,
@@ -131,6 +131,7 @@ export default function Home() {
                 ...node.data,
                 name: data.name,
                 facilityName: data.facilityName,
+                position: data.position,
                 specialty: data.specialty,
                 region: data.region,
                 photoUrl: data.photoUrl,
@@ -175,7 +176,7 @@ export default function Home() {
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-screen w-full overflow-hidden">
+      <div className="flex h-full w-full overflow-hidden">
         <aside className="w-80 border-r border-border bg-card flex flex-col overflow-hidden">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -232,19 +233,7 @@ export default function Home() {
         </aside>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-16 border-b border-border bg-card px-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-medium text-foreground">
-                ネットワークビュー
-              </h2>
-              <span className="text-sm text-muted-foreground">
-                ({filteredNodes.length} / {nodes.length} ノード表示中)
-              </span>
-            </div>
-            <ThemeToggle />
-          </header>
-
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden relative">
             <NetworkCanvas
               nodes={filteredNodes}
               edges={edges}
@@ -267,6 +256,7 @@ export default function Home() {
                   id: selectedNode.id,
                   name: selectedNode.data.name,
                   facilityName: selectedNode.data.facilityName,
+                  position: selectedNode.data.position,
                   specialty: selectedNode.data.specialty,
                   region: selectedNode.data.region,
                   photoUrl: selectedNode.data.photoUrl,

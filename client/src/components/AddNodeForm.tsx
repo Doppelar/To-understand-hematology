@@ -20,6 +20,7 @@ import { MEDICAL_UNIVERSITIES } from '@shared/universities';
 const formSchema = z.object({
   name: z.string().min(1, '氏名を入力してください'),
   facilityName: z.string().optional(),
+  position: z.string().optional(),
   career: z.string().optional(),
   specialty: z.string().optional(),
   region: z.string().optional(),
@@ -39,6 +40,7 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
     defaultValues: {
       name: '',
       facilityName: '',
+      position: '',
       career: '',
       specialty: '',
       region: '',
@@ -160,6 +162,16 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
         <p className="text-xs text-muted-foreground">
           地域を選択すると、医学部のある大学を選べます
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="position">役職</Label>
+        <Input
+          id="position"
+          {...form.register('position')}
+          placeholder="例: 教授、准教授、講師など"
+          data-testid="input-position"
+        />
       </div>
 
       <div className="space-y-2">
