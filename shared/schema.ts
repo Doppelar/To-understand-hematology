@@ -7,6 +7,7 @@ export const nodes = pgTable("nodes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   facilityName: text("facility_name"),
+  position: text("position"),
   career: text("career"),
   specialty: text("specialty"),
   region: text("region"),
@@ -36,3 +37,48 @@ export type InsertNode = z.infer<typeof insertNodeSchema>;
 export type Node = typeof nodes.$inferSelect;
 export type InsertEdge = z.infer<typeof insertEdgeSchema>;
 export type Edge = typeof edges.$inferSelect;
+
+export const societies = pgTable("societies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  shortName: text("short_name").notNull(),
+  description: text("description"),
+});
+
+export const conferences = pgTable("conferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id").notNull(),
+  year: text("year").notNull(),
+  number: text("number"),
+  title: text("title").notNull(),
+  location: text("location"),
+  president: text("president"),
+  date: text("date"),
+});
+
+export const societyOfficials = pgTable("society_officials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id").notNull(),
+  nodeId: varchar("node_id").notNull(),
+  position: text("position").notNull(),
+  term: text("term"),
+});
+
+export const insertSocietySchema = createInsertSchema(societies).omit({
+  id: true,
+});
+
+export const insertConferenceSchema = createInsertSchema(conferences).omit({
+  id: true,
+});
+
+export const insertSocietyOfficialSchema = createInsertSchema(societyOfficials).omit({
+  id: true,
+});
+
+export type InsertSociety = z.infer<typeof insertSocietySchema>;
+export type Society = typeof societies.$inferSelect;
+export type InsertConference = z.infer<typeof insertConferenceSchema>;
+export type Conference = typeof conferences.$inferSelect;
+export type InsertSocietyOfficial = z.infer<typeof insertSocietyOfficialSchema>;
+export type SocietyOfficial = typeof societyOfficials.$inferSelect;
