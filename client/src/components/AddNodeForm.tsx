@@ -24,6 +24,8 @@ const formSchema = z.object({
   career: z.string().optional(),
   specialty: z.string().optional(),
   region: z.string().optional(),
+  appointmentDate: z.string().optional(),
+  retirementDate: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -44,6 +46,8 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
       career: '',
       specialty: '',
       region: '',
+      appointmentDate: '',
+      retirementDate: '',
     },
   });
 
@@ -172,6 +176,28 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
           placeholder="例: 教授、准教授、講師など"
           data-testid="input-position"
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="appointmentDate">就任日</Label>
+          <Input
+            id="appointmentDate"
+            {...form.register('appointmentDate')}
+            placeholder="例: 2020年4月"
+            data-testid="input-appointment-date"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="retirementDate">退官日</Label>
+          <Input
+            id="retirementDate"
+            {...form.register('retirementDate')}
+            placeholder="例: 2025年3月"
+            data-testid="input-retirement-date"
+          />
+        </div>
       </div>
 
       <div className="space-y-2">

@@ -41,6 +41,8 @@ type Person = {
   specialty?: string;
   region?: string;
   photoUrl?: string;
+  appointmentDate?: string;
+  retirementDate?: string;
 };
 
 const initialPeople: Person[] = [
@@ -133,6 +135,8 @@ export default function Directory() {
       specialty: data.specialty,
       region: data.region,
       photoUrl: data.photoUrl,
+      appointmentDate: data.appointmentDate,
+      retirementDate: data.retirementDate,
     };
     setPeople([...people, newPerson]);
     setAddDialogOpen(false);
@@ -148,12 +152,17 @@ export default function Directory() {
       specialty: data.specialty,
       region: data.region,
       photoUrl: data.photoUrl,
+      appointmentDate: data.appointmentDate,
+      retirementDate: data.retirementDate,
     } : p));
     setEditingPerson(null);
   };
 
   const handleDeletePerson = (id: string) => {
     setPeople(people.filter(p => p.id !== id));
+    const newSelection = new Set(selectedPeople);
+    newSelection.delete(id);
+    setSelectedPeople(newSelection);
     setDeletingPersonId(null);
     setEditingPerson(null);
   };
@@ -251,6 +260,8 @@ export default function Directory() {
                   <TableHead>氏名</TableHead>
                   <TableHead>施設</TableHead>
                   <TableHead>役職</TableHead>
+                  <TableHead>就任日</TableHead>
+                  <TableHead>退官日</TableHead>
                   <TableHead>専門領域</TableHead>
                   <TableHead>地域</TableHead>
                   <TableHead className="w-24">操作</TableHead>
@@ -282,6 +293,8 @@ export default function Directory() {
                     <TableCell className="font-medium">{person.name}</TableCell>
                     <TableCell>{person.facilityName}</TableCell>
                     <TableCell>{person.position}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{person.appointmentDate}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{person.retirementDate}</TableCell>
                     <TableCell>
                       {person.specialty && (
                         <Badge variant="secondary">{person.specialty}</Badge>
