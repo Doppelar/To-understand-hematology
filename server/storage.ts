@@ -1,5 +1,23 @@
-import { type Node, type InsertNode, type Edge, type InsertEdge } from "@shared/schema";
+import { 
+  type Node, 
+  type InsertNode, 
+  type Edge, 
+  type InsertEdge,
+  type Society,
+  type InsertSociety,
+  type Conference,
+  type InsertConference,
+  type SocietyOfficial,
+  type InsertSocietyOfficial,
+  nodes,
+  edges,
+  societies,
+  conferences,
+  societyOfficials
+} from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getNode(id: string): Promise<Node | undefined>;
@@ -12,15 +30,40 @@ export interface IStorage {
   getAllEdges(): Promise<Edge[]>;
   createEdge(edge: InsertEdge): Promise<Edge>;
   deleteEdge(id: string): Promise<boolean>;
+
+  getSociety(id: string): Promise<Society | undefined>;
+  getAllSocieties(): Promise<Society[]>;
+  createSociety(society: InsertSociety): Promise<Society>;
+  updateSociety(id: string, society: Partial<InsertSociety>): Promise<Society | undefined>;
+  deleteSociety(id: string): Promise<boolean>;
+
+  getConference(id: string): Promise<Conference | undefined>;
+  getAllConferences(): Promise<Conference[]>;
+  getConferencesBySociety(societyId: string): Promise<Conference[]>;
+  createConference(conference: InsertConference): Promise<Conference>;
+  updateConference(id: string, conference: Partial<InsertConference>): Promise<Conference | undefined>;
+  deleteConference(id: string): Promise<boolean>;
+
+  getSocietyOfficial(id: string): Promise<SocietyOfficial | undefined>;
+  getAllSocietyOfficials(): Promise<SocietyOfficial[]>;
+  getSocietyOfficialsBySociety(societyId: string): Promise<SocietyOfficial[]>;
+  createSocietyOfficial(official: InsertSocietyOfficial): Promise<SocietyOfficial>;
+  deleteSocietyOfficial(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private nodes: Map<string, Node>;
   private edges: Map<string, Edge>;
+  private societies: Map<string, Society>;
+  private conferences: Map<string, Conference>;
+  private societyOfficials: Map<string, SocietyOfficial>;
 
   constructor() {
     this.nodes = new Map();
     this.edges = new Map();
+    this.societies = new Map();
+    this.conferences = new Map();
+    this.societyOfficials = new Map();
   }
 
   async getNode(id: string): Promise<Node | undefined> {
@@ -37,10 +80,14 @@ export class MemStorage implements IStorage {
       id,
       name: insertNode.name,
       facilityName: insertNode.facilityName ?? null,
+      position: insertNode.position ?? null,
       career: insertNode.career ?? null,
       specialty: insertNode.specialty ?? null,
       region: insertNode.region ?? null,
       photoUrl: insertNode.photoUrl ?? null,
+      graduationYear: insertNode.graduationYear ?? null,
+      appointmentDate: insertNode.appointmentDate ?? null,
+      retirementDate: insertNode.retirementDate ?? null,
       positionX: "0",
       positionY: "0"
     };
@@ -84,6 +131,229 @@ export class MemStorage implements IStorage {
   async deleteEdge(id: string): Promise<boolean> {
     return this.edges.delete(id);
   }
+
+  async getSociety(id: string): Promise<Society | undefined> {
+    return this.societies.get(id);
+  }
+
+  async getAllSocieties(): Promise<Society[]> {
+    return Array.from(this.societies.values());
+  }
+
+  async createSociety(insertSociety: InsertSociety): Promise<Society> {
+    const id = randomUUID();
+    const society: Society = { 
+      id,
+      name: insertSociety.name,
+      shortName: insertSociety.shortName,
+      description: insertSociety.description ?? null
+    };
+    this.societies.set(id, society);
+    return society;
+  }
+
+  async updateSociety(id: string, updates: Partial<InsertSociety>): Promise<Society | undefined> {
+    const society = this.societies.get(id);
+    if (!society) return undefined;
+    
+    const updatedSociety = { ...society, ...updates };
+    this.societies.set(id, updatedSociety);
+    return updatedSociety;
+  }
+
+  async deleteSociety(id: string): Promise<boolean> {
+    return this.societies.delete(id);
+  }
+
+  async getConference(id: string): Promise<Conference | undefined> {
+    return this.conferences.get(id);
+  }
+
+  async getAllConferences(): Promise<Conference[]> {
+    return Array.from(this.conferences.values());
+  }
+
+  async getConferencesBySociety(societyId: string): Promise<Conference[]> {
+    return Array.from(this.conferences.values()).filter(c => c.societyId === societyId);
+  }
+
+  async createConference(insertConference: InsertConference): Promise<Conference> {
+    const id = randomUUID();
+    const conference: Conference = { 
+      id,
+      societyId: insertConference.societyId,
+      year: insertConference.year,
+      number: insertConference.number ?? null,
+      title: insertConference.title,
+      location: insertConference.location ?? null,
+      president: insertConference.president ?? null,
+      date: insertConference.date ?? null
+    };
+    this.conferences.set(id, conference);
+    return conference;
+  }
+
+  async updateConference(id: string, updates: Partial<InsertConference>): Promise<Conference | undefined> {
+    const conference = this.conferences.get(id);
+    if (!conference) return undefined;
+    
+    const updatedConference = { ...conference, ...updates };
+    this.conferences.set(id, updatedConference);
+    return updatedConference;
+  }
+
+  async deleteConference(id: string): Promise<boolean> {
+    return this.conferences.delete(id);
+  }
+
+  async getSocietyOfficial(id: string): Promise<SocietyOfficial | undefined> {
+    return this.societyOfficials.get(id);
+  }
+
+  async getAllSocietyOfficials(): Promise<SocietyOfficial[]> {
+    return Array.from(this.societyOfficials.values());
+  }
+
+  async getSocietyOfficialsBySociety(societyId: string): Promise<SocietyOfficial[]> {
+    return Array.from(this.societyOfficials.values()).filter(o => o.societyId === societyId);
+  }
+
+  async createSocietyOfficial(insertOfficial: InsertSocietyOfficial): Promise<SocietyOfficial> {
+    const id = randomUUID();
+    const official: SocietyOfficial = { 
+      id,
+      societyId: insertOfficial.societyId,
+      nodeId: insertOfficial.nodeId,
+      position: insertOfficial.position,
+      term: insertOfficial.term ?? null
+    };
+    this.societyOfficials.set(id, official);
+    return official;
+  }
+
+  async deleteSocietyOfficial(id: string): Promise<boolean> {
+    return this.societyOfficials.delete(id);
+  }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getNode(id: string): Promise<Node | undefined> {
+    const [node] = await db.select().from(nodes).where(eq(nodes.id, id));
+    return node || undefined;
+  }
+
+  async getAllNodes(): Promise<Node[]> {
+    return await db.select().from(nodes);
+  }
+
+  async createNode(insertNode: InsertNode): Promise<Node> {
+    const [node] = await db.insert(nodes).values(insertNode).returning();
+    return node;
+  }
+
+  async updateNode(id: string, updates: Partial<InsertNode>): Promise<Node | undefined> {
+    const [node] = await db.update(nodes).set(updates).where(eq(nodes.id, id)).returning();
+    return node || undefined;
+  }
+
+  async deleteNode(id: string): Promise<boolean> {
+    const result = await db.delete(nodes).where(eq(nodes.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getEdge(id: string): Promise<Edge | undefined> {
+    const [edge] = await db.select().from(edges).where(eq(edges.id, id));
+    return edge || undefined;
+  }
+
+  async getAllEdges(): Promise<Edge[]> {
+    return await db.select().from(edges);
+  }
+
+  async createEdge(insertEdge: InsertEdge): Promise<Edge> {
+    const [edge] = await db.insert(edges).values(insertEdge).returning();
+    return edge;
+  }
+
+  async deleteEdge(id: string): Promise<boolean> {
+    const result = await db.delete(edges).where(eq(edges.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getSociety(id: string): Promise<Society | undefined> {
+    const [society] = await db.select().from(societies).where(eq(societies.id, id));
+    return society || undefined;
+  }
+
+  async getAllSocieties(): Promise<Society[]> {
+    return await db.select().from(societies);
+  }
+
+  async createSociety(insertSociety: InsertSociety): Promise<Society> {
+    const [society] = await db.insert(societies).values(insertSociety).returning();
+    return society;
+  }
+
+  async updateSociety(id: string, updates: Partial<InsertSociety>): Promise<Society | undefined> {
+    const [society] = await db.update(societies).set(updates).where(eq(societies.id, id)).returning();
+    return society || undefined;
+  }
+
+  async deleteSociety(id: string): Promise<boolean> {
+    const result = await db.delete(societies).where(eq(societies.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getConference(id: string): Promise<Conference | undefined> {
+    const [conference] = await db.select().from(conferences).where(eq(conferences.id, id));
+    return conference || undefined;
+  }
+
+  async getAllConferences(): Promise<Conference[]> {
+    return await db.select().from(conferences);
+  }
+
+  async getConferencesBySociety(societyId: string): Promise<Conference[]> {
+    return await db.select().from(conferences).where(eq(conferences.societyId, societyId));
+  }
+
+  async createConference(insertConference: InsertConference): Promise<Conference> {
+    const [conference] = await db.insert(conferences).values(insertConference).returning();
+    return conference;
+  }
+
+  async updateConference(id: string, updates: Partial<InsertConference>): Promise<Conference | undefined> {
+    const [conference] = await db.update(conferences).set(updates).where(eq(conferences.id, id)).returning();
+    return conference || undefined;
+  }
+
+  async deleteConference(id: string): Promise<boolean> {
+    const result = await db.delete(conferences).where(eq(conferences.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getSocietyOfficial(id: string): Promise<SocietyOfficial | undefined> {
+    const [official] = await db.select().from(societyOfficials).where(eq(societyOfficials.id, id));
+    return official || undefined;
+  }
+
+  async getAllSocietyOfficials(): Promise<SocietyOfficial[]> {
+    return await db.select().from(societyOfficials);
+  }
+
+  async getSocietyOfficialsBySociety(societyId: string): Promise<SocietyOfficial[]> {
+    return await db.select().from(societyOfficials).where(eq(societyOfficials.societyId, societyId));
+  }
+
+  async createSocietyOfficial(insertOfficial: InsertSocietyOfficial): Promise<SocietyOfficial> {
+    const [official] = await db.insert(societyOfficials).values(insertOfficial).returning();
+    return official;
+  }
+
+  async deleteSocietyOfficial(id: string): Promise<boolean> {
+    const result = await db.delete(societyOfficials).where(eq(societyOfficials.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+}
+
+export const storage = new DatabaseStorage();

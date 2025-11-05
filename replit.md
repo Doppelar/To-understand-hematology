@@ -50,38 +50,38 @@ Preferred communication style: Simple, everyday language.
 
 **Storage Layer**:
 - **Interface**: Abstract `IStorage` interface for CRUD operations
-- **Implementation**: In-memory storage (`MemStorage`) with Map-based collections
+- **Implementation**: DatabaseStorage using Drizzle ORM connected to PostgreSQL
 - **Schema**: Drizzle ORM schema definitions with PostgreSQL dialect
-- **Models**: Nodes (professionals), Edges (relationships), Societies, Conferences
+- **Models**: Nodes (professionals), Edges (relationships), Societies, Conferences, Society Officials
 
 **Data Models**:
-- **Nodes**: Medical professionals with name, facility, position, career, specialty, region, photo, and x/y position
+- **Nodes**: Medical professionals with name, facility, position, career, specialty, region, photo, graduationYear (出身大学卒年), appointmentDate (就任日), retirementDate (退官日), and x/y position
 - **Edges**: Relationships between nodes with optional labels
 - **Societies**: Medical societies with name, short name, and description
 - **Conferences**: Academic conferences linked to societies with year, location, president, dates
+- **Society Officials**: Links nodes to societies with position and term information
 
 **API Design**:
 - RESTful endpoints prefixed with `/api`
-- JSON request/response format
+- Full CRUD operations for all models (nodes, edges, societies, conferences, society-officials)
+- JSON request/response format with Zod validation
 - Request logging middleware with duration tracking
-- Session support via connect-pg-simple (configured for future PostgreSQL integration)
+- Session support via express-session with PostgreSQL store
 
 ## Data Storage
 
-**Current Implementation**: In-memory storage using JavaScript Maps
-- Node storage: Map<id, Node>
-- Edge storage: Map<id, Edge>
-- UUID generation for unique identifiers
-
-**Database Schema** (Drizzle ORM with PostgreSQL):
-- Tables: `nodes`, `edges`, `societies`, `conferences`
+**Current Implementation**: PostgreSQL database via Drizzle ORM
+- Database: Neon serverless PostgreSQL
+- Connection: `@neondatabase/serverless` driver with WebSocket support
+- Tables: `nodes`, `edges`, `societies`, `conferences`, `society_officials`
 - All tables use UUID primary keys via `gen_random_uuid()`
 - Text fields for Japanese content (names, descriptions, positions)
-- Position tracking (positionX, positionY) for graph layout persistence
+- Position tracking (positionX, positionY) for network graph layout persistence
+- Temporal tracking (appointmentDate, retirementDate) for career progression
 
 **Schema Validation**: Zod schemas derived from Drizzle tables using `drizzle-zod`
 
-**Migration Strategy**: Drizzle Kit configured to generate migrations in `/migrations` directory
+**Migration Strategy**: Drizzle Kit push mode (`npm run db:push`) for schema synchronization
 
 ## External Dependencies
 
@@ -124,3 +124,18 @@ Preferred communication style: Simple, everyday language.
 - Universities list covering all major Japanese medical schools organized by region
 - Region-based filtering (北海道, 東北, 関東, 中部, 関西, 中国, 四国, 九州)
 - Specialty tags for hematology subspecialties (MCL, 移植, DLBCL, FL, AML, ALL, CML)
+- Position datalist with common academic and clinical roles (教授, 准教授, 講師, 助教, etc.)
+
+# Recent Changes
+
+## 2025-11-05: Database Integration & New Fields
+- Migrated from in-memory storage to PostgreSQL database
+- Implemented full CRUD API routes for all data models
+- Added DatabaseStorage class using Drizzle ORM
+- Updated Directory page to use TanStack Query for data fetching
+- Added new fields to nodes:
+  - graduationYear (出身大学卒年): University graduation year
+  - appointmentDate (就任日): Position appointment date
+  - retirementDate (退官日): Retirement date
+- Role selection now uses HTML datalist with predefined options
+- Network map visualization simplified (removed region and specialty badges from node display)

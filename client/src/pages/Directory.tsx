@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,61 +29,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import businessPerson from '@assets/generated_images/Professional_Japanese_businessperson_portrait_f0615887.png';
-import medicalProfessional from '@assets/generated_images/Japanese_medical_professional_portrait_c3b51456.png';
-import researcher from '@assets/generated_images/Japanese_researcher_portrait_dcaf188f.png';
-
-type Person = {
-  id: string;
-  name: string;
-  facilityName: string;
-  position?: string;
-  career?: string;
-  specialty?: string;
-  region?: string;
-  photoUrl?: string;
-  appointmentDate?: string;
-  retirementDate?: string;
-};
-
-const initialPeople: Person[] = [
-  {
-    id: '1',
-    name: '田中太郎',
-    facilityName: '東京大学',
-    position: '教授',
-    specialty: 'MCL',
-    region: '関東',
-    photoUrl: medicalProfessional,
-  },
-  {
-    id: '2',
-    name: '佐藤花子',
-    facilityName: '大阪大学',
-    position: '准教授',
-    specialty: '移植',
-    region: '関西',
-    photoUrl: businessPerson,
-  },
-  {
-    id: '3',
-    name: '鈴木一郎',
-    facilityName: '名古屋大学',
-    position: '講師',
-    specialty: '悪性リンパ腫',
-    region: '中部',
-    photoUrl: researcher,
-  },
-];
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import type { Node } from '@shared/schema';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Directory() {
-  const [people, setPeople] = useState<Person[]>(initialPeople);
+  const { toast } = useToast();
+  const { data: people = [], isLoading } = useQuery<Node[]>({
+    queryKey: ['/api/nodes'],
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [editingPerson, setEditingPerson] = useState<Node | null>(null);
   const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
@@ -93,7 +55,7 @@ export default function Directory() {
     return people.filter(person => {
       const matchesSearch = !searchQuery || 
         person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        person.facilityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (person.facilityName && person.facilityName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (person.position && person.position.toLowerCase().includes(searchQuery.toLowerCase()));
       
       const matchesSpecialty = !selectedSpecialty || person.specialty === selectedSpecialty;
@@ -125,46 +87,99 @@ export default function Directory() {
     setSelectedPeople(new Set());
   };
 
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/nodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create node');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/nodes'] });
+      setAddDialogOpen(false);
+      toast({
+        title: '追加しました',
+        description: '新しいノードが追加されました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラー',
+        description: 'ノードの追加に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/nodes/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update node');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/nodes'] });
+      setEditingPerson(null);
+      toast({
+        title: '更新しました',
+        description: 'ノードが更新されました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラー',
+        description: 'ノードの更新に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/nodes/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete node');
+      return;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/nodes'] });
+      const newSelection = new Set(selectedPeople);
+      newSelection.delete(id);
+      setSelectedPeople(newSelection);
+      setDeletingPersonId(null);
+      setEditingPerson(null);
+      toast({
+        title: '削除しました',
+        description: 'ノードが削除されました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラー',
+        description: 'ノードの削除に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleAddPerson = (data: any) => {
-    const newPerson: Person = {
-      id: `${Date.now()}`,
-      name: data.name,
-      facilityName: data.facilityName || '',
-      position: data.position,
-      career: data.career,
-      specialty: data.specialty,
-      region: data.region,
-      photoUrl: data.photoUrl,
-      appointmentDate: data.appointmentDate,
-      retirementDate: data.retirementDate,
-    };
-    setPeople([...people, newPerson]);
-    setAddDialogOpen(false);
+    createMutation.mutate(data);
   };
 
   const handleEditPerson = (data: any) => {
-    setPeople(people.map(p => p.id === data.id ? {
-      ...p,
-      name: data.name,
-      facilityName: data.facilityName || '',
-      position: data.position,
-      career: data.career,
-      specialty: data.specialty,
-      region: data.region,
-      photoUrl: data.photoUrl,
-      appointmentDate: data.appointmentDate,
-      retirementDate: data.retirementDate,
-    } : p));
-    setEditingPerson(null);
+    updateMutation.mutate(data);
   };
 
   const handleDeletePerson = (id: string) => {
-    setPeople(people.filter(p => p.id !== id));
-    const newSelection = new Set(selectedPeople);
-    newSelection.delete(id);
-    setSelectedPeople(newSelection);
-    setDeletingPersonId(null);
-    setEditingPerson(null);
+    deleteMutation.mutate(id);
   };
 
   return (
@@ -252,7 +267,20 @@ export default function Directory() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex gap-4 items-center">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-3 w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
@@ -260,6 +288,7 @@ export default function Directory() {
                   <TableHead>氏名</TableHead>
                   <TableHead>施設</TableHead>
                   <TableHead>役職</TableHead>
+                  <TableHead>卒年</TableHead>
                   <TableHead>就任日</TableHead>
                   <TableHead>退官日</TableHead>
                   <TableHead>専門領域</TableHead>
@@ -286,13 +315,14 @@ export default function Directory() {
                     </TableCell>
                     <TableCell>
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={person.photoUrl} />
+                        <AvatarImage src={person.photoUrl || ''} />
                         <AvatarFallback>{person.name[0]}</AvatarFallback>
                       </Avatar>
                     </TableCell>
                     <TableCell className="font-medium">{person.name}</TableCell>
-                    <TableCell>{person.facilityName}</TableCell>
-                    <TableCell>{person.position}</TableCell>
+                    <TableCell>{person.facilityName || ''}</TableCell>
+                    <TableCell>{person.position || ''}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{person.graduationYear}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{person.appointmentDate}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{person.retirementDate}</TableCell>
                     <TableCell>
@@ -333,6 +363,7 @@ export default function Directory() {
                 ))}
               </TableBody>
             </Table>
+            )}
           </CardContent>
         </Card>
       </div>

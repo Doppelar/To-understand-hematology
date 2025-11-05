@@ -31,6 +31,7 @@ const formSchema = z.object({
   career: z.string().optional(),
   specialty: z.string().optional(),
   region: z.string().optional(),
+  graduationYear: z.string().optional(),
   appointmentDate: z.string().optional(),
   retirementDate: z.string().optional(),
 });
@@ -68,6 +69,7 @@ export default function EditNodeDialog({
       career: '',
       specialty: '',
       region: '',
+      graduationYear: '',
       appointmentDate: '',
       retirementDate: '',
     },
@@ -82,6 +84,7 @@ export default function EditNodeDialog({
         career: node.career || '',
         specialty: node.specialty || '',
         region: node.region || '',
+        graduationYear: (node as any).graduationYear || '',
         appointmentDate: (node as any).appointmentDate || '',
         retirementDate: (node as any).retirementDate || '',
       });
@@ -222,13 +225,39 @@ export default function EditNodeDialog({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="edit-graduationYear">出身大学卒年</Label>
+            <Input
+              id="edit-graduationYear"
+              {...form.register('graduationYear')}
+              placeholder="例: 1990年、1995年3月など"
+              data-testid="input-edit-graduation-year"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="edit-position">役職</Label>
             <Input
               id="edit-position"
               {...form.register('position')}
               placeholder="例: 教授、准教授、講師など"
+              list="edit-position-suggestions"
               data-testid="input-edit-position"
             />
+            <datalist id="edit-position-suggestions">
+              <option value="教授" />
+              <option value="准教授" />
+              <option value="講師" />
+              <option value="助教" />
+              <option value="特任教授" />
+              <option value="客員教授" />
+              <option value="名誉教授" />
+              <option value="診療科長" />
+              <option value="部長" />
+              <option value="医長" />
+            </datalist>
+            <p className="text-xs text-muted-foreground">
+              既存の選択肢から選ぶか、新しい役職を入力できます
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
