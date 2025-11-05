@@ -2,7 +2,7 @@ import { useState } from 'react';
 import FilterBar from '../FilterBar';
 
 export default function FilterBarExample() {
-  const [activeSpecialties, setActiveSpecialties] = useState<string[]>(['循環器']);
+  const [activeSpecialties, setActiveSpecialties] = useState<string[]>(['MCL']);
   const [activeRegions, setActiveRegions] = useState<string[]>(['関東']);
 
   const handleToggleSpecialty = (specialty: string) => {
@@ -31,6 +31,7 @@ export default function FilterBarExample() {
       <FilterBar
         activeSpecialties={activeSpecialties}
         activeRegions={activeRegions}
+        availableSpecialties={['MCL', '移植', 'カスタム専門']}
         onToggleSpecialty={handleToggleSpecialty}
         onToggleRegion={handleToggleRegion}
         onClearAll={handleClearAll}

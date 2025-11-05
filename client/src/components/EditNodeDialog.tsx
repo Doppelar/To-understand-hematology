@@ -161,25 +161,26 @@ export default function EditNodeDialog({
 
           <div className="space-y-2">
             <Label htmlFor="edit-specialty">専門領域</Label>
-            <Select
-              onValueChange={(value) => form.setValue('specialty', value)}
-              value={form.watch('specialty')}
-            >
-              <SelectTrigger data-testid="select-edit-specialty">
-                <SelectValue placeholder="選択してください" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MCL">MCL</SelectItem>
-                <SelectItem value="移植">移植</SelectItem>
-                <SelectItem value="悪性リンパ腫">悪性リンパ腫</SelectItem>
-                <SelectItem value="DLBCL">DLBCL</SelectItem>
-                <SelectItem value="FL">FL</SelectItem>
-                <SelectItem value="AML">AML</SelectItem>
-                <SelectItem value="ALL">ALL</SelectItem>
-                <SelectItem value="CML">CML</SelectItem>
-                <SelectItem value="その他">その他</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              id="edit-specialty"
+              {...form.register('specialty')}
+              placeholder="例: MCL、移植、悪性リンパ腫など"
+              list="edit-specialty-suggestions"
+              data-testid="input-edit-specialty"
+            />
+            <datalist id="edit-specialty-suggestions">
+              <option value="MCL" />
+              <option value="移植" />
+              <option value="悪性リンパ腫" />
+              <option value="DLBCL" />
+              <option value="FL" />
+              <option value="AML" />
+              <option value="ALL" />
+              <option value="CML" />
+            </datalist>
+            <p className="text-xs text-muted-foreground">
+              既存の選択肢から選ぶか、新しい専門領域を入力できます
+            </p>
           </div>
 
           <div className="space-y-2">

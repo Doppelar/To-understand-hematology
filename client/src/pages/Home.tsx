@@ -73,6 +73,16 @@ export default function Home() {
   const [activeSpecialties, setActiveSpecialties] = useState<string[]>([]);
   const [activeRegions, setActiveRegions] = useState<string[]>([]);
 
+  const availableSpecialties = useMemo(() => {
+    const specialties = new Set<string>();
+    nodes.forEach((node) => {
+      if (node.data.specialty) {
+        specialties.add(node.data.specialty);
+      }
+    });
+    return Array.from(specialties);
+  }, [nodes]);
+
   const filteredNodes = useMemo(() => {
     if (activeSpecialties.length === 0 && activeRegions.length === 0) {
       return nodes;
@@ -193,6 +203,7 @@ export default function Home() {
                   <FilterBar
                     activeSpecialties={activeSpecialties}
                     activeRegions={activeRegions}
+                    availableSpecialties={availableSpecialties}
                     onToggleSpecialty={handleToggleSpecialty}
                     onToggleRegion={handleToggleRegion}
                     onClearAll={handleClearFilters}

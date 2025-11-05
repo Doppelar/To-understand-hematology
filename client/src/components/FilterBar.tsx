@@ -1,25 +1,40 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { X, Plus } from 'lucide-react';
 
 type FilterBarProps = {
   activeSpecialties: string[];
   activeRegions: string[];
+  availableSpecialties: string[];
   onToggleSpecialty: (specialty: string) => void;
   onToggleRegion: (region: string) => void;
   onClearAll: () => void;
 };
 
-const SPECIALTIES = ['MCL', '移植', '悪性リンパ腫', 'DLBCL', 'FL', 'AML', 'ALL', 'CML'];
+const DEFAULT_SPECIALTIES = ['MCL', '移植', '悪性リンパ腫', 'DLBCL', 'FL', 'AML', 'ALL', 'CML'];
 const REGIONS = ['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州'];
 
 export default function FilterBar({
   activeSpecialties,
   activeRegions,
+  availableSpecialties,
   onToggleSpecialty,
   onToggleRegion,
   onClearAll,
 }: FilterBarProps) {
+  const [customSpecialty, setCustomSpecialty] = useState('');
   const hasActiveFilters = activeSpecialties.length > 0 || activeRegions.length > 0;
+
+  const allSpecialties = Array.from(new Set([...DEFAULT_SPECIALTIES, ...availableSpecialties]));
+
+  const handleAddCustomSpecialty = () => {
+    if (customSpecialty.trim()) {
+      onToggleSpecialty(customSpecialty.trim());
+      setCustomSpecialty('');
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -35,8 +50,33 @@ export default function FilterBar({
           </button>
         )}
       </div>
+      
+      <div className="flex gap-2">
+        <Input
+          value={customSpecialty}
+          onChange={(e) => setCustomSpecialty(e.target.value)}
+          placeholder="カスタム専門領域"
+          className="flex-1 h-8"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAddCustomSpecialty();
+            }
+          }}
+          data-testid="input-custom-specialty"
+        />
+        <Button
+          size="sm"
+          onClick={handleAddCustomSpecialty}
+          className="h-8"
+          data-testid="button-add-specialty"
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+
       <div className="flex flex-wrap gap-2">
-        {SPECIALTIES.map((specialty) => {
+        {allSpecialties.map((specialty) => {
           const isActive = activeSpecialties.includes(specialty);
           return (
             <Badge
