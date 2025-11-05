@@ -191,3 +191,16 @@ Preferred communication style: Simple, everyday language.
   - TanStack Query cache invalidation on all CRUD operations
   - Comprehensive error handling with toast notifications
   - E2E tested: create, edit, and delete operations verified working
+- **Directory Sorting Feature**:
+  - Added comprehensive sorting capability to Directory page
+  - Sort options include:
+    - Name (ascending/descending) with Japanese locale support
+    - Graduation year (oldest/newest)
+    - Graduation university (ascending/descending) with Japanese locale support
+    - Facility name (ascending/descending) with Japanese locale support
+    - Appointment date (oldest/newest)
+  - Implemented using Select component with ArrowUpDown icon
+  - Sort state maintained in component state with default "name-asc"
+  - Sorting logic integrated into filteredPeople useMemo for performance
+  - Uses localeCompare with 'ja' parameter for proper Japanese text sorting
+  - E2E tested: verified all 10 sort options work correctly
