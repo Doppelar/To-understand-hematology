@@ -146,3 +146,10 @@ Preferred communication style: Simple, everyday language.
   - Photos stored in private object directory, served via /objects/:path route
   - Presigned URL upload mechanism for direct client-to-storage uploads
   - Automatic path normalization and database storage of photo URLs
+- **Influencer Map Integration with Directory**:
+  - Replaced manual node entry with directory-based selection via NodeSelector component
+  - Implemented persistent node positions (positionX, positionY) saved on drag
+  - Edge (relationship) creation and deletion with database persistence
+  - Real-time filtering by specialty and region
+  - Searchable directory list with avatar, name, facility, and badges
+  - Bidirectional sync: selecting people from directory displays them on the map

@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo, useEffect } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -10,6 +10,8 @@ import ReactFlow, {
   useEdgesState,
   Connection,
   NodeTypes,
+  NodeChange,
+  EdgeChange,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import CustomNode, { CustomNodeData } from './CustomNode';
@@ -19,8 +21,8 @@ import { ZoomIn, ZoomOut, Maximize2, Eye, EyeOff } from 'lucide-react';
 type NetworkCanvasProps = {
   nodes: Node<CustomNodeData>[];
   edges: Edge[];
-  onNodesChange: (nodes: Node<CustomNodeData>[]) => void;
-  onEdgesChange: (edges: Edge[]) => void;
+  onNodesChange: (changes: NodeChange[]) => Node<CustomNodeData>[];
+  onEdgesChange: (changes: EdgeChange[]) => Edge[];
   onNodeClick: (node: Node<CustomNodeData>) => void;
   onConnect: (connection: Connection) => void;
   showLabels: boolean;
@@ -32,18 +34,26 @@ const nodeTypes: NodeTypes = {
 };
 
 export default function NetworkCanvas({
-  nodes: initialNodes,
-  edges: initialEdges,
-  onNodesChange,
-  onEdgesChange,
+  nodes: propNodes,
+  edges: propEdges,
+  onNodesChange: onNodesChangeProp,
+  onEdgesChange: onEdgesChangeProp,
   onNodeClick,
   onConnect,
   showLabels,
   onToggleLabels,
 }: NetworkCanvasProps) {
-  const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChangeInternal] = useNodesState(propNodes);
+  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(propEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  useEffect(() => {
+    setNodes(propNodes);
+  }, [propNodes, setNodes]);
+
+  useEffect(() => {
+    setEdges(propEdges);
+  }, [propEdges, setEdges]);
 
   const nodesWithLabels = useMemo(() => {
     return nodes.map((node) => ({
@@ -56,25 +66,21 @@ export default function NetworkCanvas({
   }, [nodes, showLabels]);
 
   const handleNodesChange = useCallback(
-    (changes: any) => {
+    (changes: NodeChange[]) => {
       onNodesChangeInternal(changes);
-      const updatedNodes = nodes.map((node) => {
-        const change = changes.find((c: any) => c.id === node.id);
-        if (change?.position) {
-          return { ...node, position: change.position };
-        }
-        return node;
-      });
-      onNodesChange(updatedNodes);
+      const updatedNodes = onNodesChangeProp(changes);
+      setNodes(updatedNodes);
     },
-    [nodes, onNodesChange, onNodesChangeInternal]
+    [onNodesChangeProp, onNodesChangeInternal, setNodes]
   );
 
   const handleEdgesChange = useCallback(
-    (changes: any) => {
+    (changes: EdgeChange[]) => {
       onEdgesChangeInternal(changes);
+      const updatedEdges = onEdgesChangeProp(changes);
+      setEdges(updatedEdges);
     },
-    [onEdgesChangeInternal]
+    [onEdgesChangeProp, onEdgesChangeInternal, setEdges]
   );
 
   const handleConnect = useCallback(
@@ -160,8 +166,8 @@ export default function NetworkCanvas({
       {nodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center text-muted-foreground">
-            <p className="text-lg font-medium">ノードを追加してマップを開始</p>
-            <p className="text-sm mt-2">左側のフォームからノードを追加できます</p>
+            <p className="text-lg font-medium">名鑑から人物を選択してマップを開始</p>
+            <p className="text-sm mt-2">左側の「名鑑から選択」で人物を追加できます</p>
           </div>
         </div>
       )}

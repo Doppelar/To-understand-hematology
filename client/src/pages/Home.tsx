@@ -1,76 +1,117 @@
-import { useState, useCallback, useMemo } from 'react';
-import { ReactFlowProvider, Node, Edge, Connection } from 'reactflow';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { ReactFlowProvider, Node, Edge, Connection, NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges } from 'reactflow';
 import 'reactflow/dist/style.css';
 import NetworkCanvas from '@/components/NetworkCanvas';
-import AddNodeForm from '@/components/AddNodeForm';
+import NodeSelector from '@/components/NodeSelector';
 import EditNodeDialog from '@/components/EditNodeDialog';
 import FilterBar from '@/components/FilterBar';
 import { CustomNodeData } from '@/components/CustomNode';
 import { Button } from '@/components/ui/button';
-import { Upload, Network } from 'lucide-react';
+import { Network } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import businessPerson from '@assets/generated_images/Professional_Japanese_businessperson_portrait_f0615887.png';
-import medicalProfessional from '@assets/generated_images/Japanese_medical_professional_portrait_c3b51456.png';
-import researcher from '@assets/generated_images/Japanese_researcher_portrait_dcaf188f.png';
+import type { Node as DBNode, Edge as DBEdge } from '@shared/schema';
 
 export default function Home() {
-  const [nodes, setNodes] = useState<Node<CustomNodeData>[]>([
-    {
-      id: '1',
-      type: 'custom',
-      position: { x: 250, y: 100 },
-      data: {
-        name: '田中太郎',
-        facilityName: '東京大学病院',
-        specialty: 'MCL',
-        region: '関東',
-        photoUrl: medicalProfessional,
-        showLabels: true,
-      },
-    },
-    {
-      id: '2',
-      type: 'custom',
-      position: { x: 100, y: 300 },
-      data: {
-        name: '佐藤花子',
-        facilityName: '大阪市立病院',
-        specialty: '移植',
-        region: '関西',
-        photoUrl: businessPerson,
-        showLabels: true,
-      },
-    },
-    {
-      id: '3',
-      type: 'custom',
-      position: { x: 400, y: 300 },
-      data: {
-        name: '鈴木一郎',
-        facilityName: '名古屋大学',
-        specialty: '悪性リンパ腫',
-        region: '中部',
-        photoUrl: researcher,
-        showLabels: true,
-      },
-    },
-  ]);
-
-  const [edges, setEdges] = useState<Edge[]>([
-    { id: 'e1-2', source: '1', target: '2', animated: true },
-    { id: 'e1-3', source: '1', target: '3', animated: true },
-  ]);
-
+  const { toast } = useToast();
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedNode, setSelectedNode] = useState<Node<CustomNodeData> | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [activeSpecialties, setActiveSpecialties] = useState<string[]>([]);
   const [activeRegions, setActiveRegions] = useState<string[]>([]);
+
+  const { data: dbNodes = [] } = useQuery<DBNode[]>({
+    queryKey: ['/api/nodes'],
+  });
+
+  const { data: dbEdges = [] } = useQuery<DBEdge[]>({
+    queryKey: ['/api/edges'],
+  });
+
+  const updateNodeMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<DBNode> }) => {
+      return apiRequest(`/api/nodes/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/nodes'] });
+    },
+  });
+
+  const createEdgeMutation = useMutation({
+    mutationFn: async (data: { sourceId: string; targetId: string }) => {
+      return apiRequest('/api/edges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/edges'] });
+      toast({
+        title: '関係性を追加しました',
+      });
+    },
+  });
+
+  const deleteEdgeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/edges/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/edges'] });
+    },
+  });
+
+  const nodes = useMemo<Node<CustomNodeData>[]>(() => {
+    return dbNodes
+      .filter((dbNode) => selectedNodeIds.includes(dbNode.id))
+      .map((dbNode) => ({
+        id: dbNode.id,
+        type: 'custom',
+        position: {
+          x: parseFloat(dbNode.positionX) || Math.random() * 400,
+          y: parseFloat(dbNode.positionY) || Math.random() * 400,
+        },
+        data: {
+          name: dbNode.name,
+          facilityName: dbNode.facilityName || undefined,
+          position: dbNode.position || undefined,
+          specialty: dbNode.specialty || undefined,
+          region: dbNode.region || undefined,
+          photoUrl: dbNode.photoUrl || undefined,
+          showLabels: true,
+        },
+      }));
+  }, [dbNodes, selectedNodeIds]);
+
+  const edges = useMemo<Edge[]>(() => {
+    return dbEdges
+      .filter((dbEdge) =>
+        selectedNodeIds.includes(dbEdge.sourceId) &&
+        selectedNodeIds.includes(dbEdge.targetId)
+      )
+      .map((dbEdge) => ({
+        id: dbEdge.id,
+        source: dbEdge.sourceId,
+        target: dbEdge.targetId,
+        label: dbEdge.label || undefined,
+        animated: true,
+      }));
+  }, [dbEdges, selectedNodeIds]);
 
   const availableSpecialties = useMemo(() => {
     const specialties = new Set<string>();
@@ -98,64 +139,84 @@ export default function Home() {
     });
   }, [nodes, activeSpecialties, activeRegions]);
 
-  const handleAddNode = useCallback((data: any) => {
-    const newNode: Node<CustomNodeData> = {
-      id: `${Date.now()}`,
-      type: 'custom',
-      position: { x: Math.random() * 400, y: Math.random() * 400 },
-      data: {
-        name: data.name,
-        facilityName: data.facilityName,
-        position: data.position,
-        specialty: data.specialty,
-        region: data.region,
-        photoUrl: data.photoUrl,
-        showLabels: true,
-      },
-    };
-    setNodes((nds) => [...nds, newNode]);
-  }, []);
-
-  const handleNodeClick = useCallback((node: Node<CustomNodeData>) => {
-    setSelectedNode(node);
-    setEditDialogOpen(true);
-  }, []);
-
-  const handleSaveNode = useCallback((data: any) => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === data.id
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                name: data.name,
-                facilityName: data.facilityName,
-                position: data.position,
-                specialty: data.specialty,
-                region: data.region,
-                photoUrl: data.photoUrl,
-              },
-            }
-          : node
-      )
+  const handleSelectNode = useCallback((nodeId: string) => {
+    setSelectedNodeIds((prev) =>
+      prev.includes(nodeId) ? prev.filter((id) => id !== nodeId) : [...prev, nodeId]
     );
   }, []);
 
-  const handleDeleteNode = useCallback((id: string) => {
-    setNodes((nds) => nds.filter((node) => node.id !== id));
-    setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
-  }, []);
+  const handleNodeClick = useCallback(
+    (node: Node<CustomNodeData>) => {
+      const dbNode = dbNodes.find((n) => n.id === node.id);
+      if (dbNode) {
+        setSelectedNode(node);
+        setEditDialogOpen(true);
+      }
+    },
+    [dbNodes]
+  );
 
-  const handleConnect = useCallback((connection: Connection) => {
-    const newEdge: Edge = {
-      id: `e${connection.source}-${connection.target}`,
-      source: connection.source!,
-      target: connection.target!,
-      animated: true,
-    };
-    setEdges((eds) => [...eds, newEdge]);
-  }, []);
+  const handleSaveNode = useCallback(
+    (data: any) => {
+      updateNodeMutation.mutate({ id: data.id, data });
+      setEditDialogOpen(false);
+    },
+    [updateNodeMutation]
+  );
+
+  const handleDeleteNode = useCallback(
+    (id: string) => {
+      setSelectedNodeIds((prev) => prev.filter((nodeId) => nodeId !== id));
+      setEditDialogOpen(false);
+    },
+    []
+  );
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      if (connection.source && connection.target) {
+        createEdgeMutation.mutate({
+          sourceId: connection.source,
+          targetId: connection.target,
+        });
+      }
+    },
+    [createEdgeMutation]
+  );
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      const updatedNodes = applyNodeChanges(changes, nodes);
+      
+      changes.forEach((change) => {
+        if (change.type === 'position' && change.dragging === false && change.position) {
+          updateNodeMutation.mutate({
+            id: change.id,
+            data: {
+              positionX: change.position.x.toString(),
+              positionY: change.position.y.toString(),
+            },
+          });
+        }
+      });
+
+      return updatedNodes;
+    },
+    [nodes, updateNodeMutation]
+  );
+
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      changes.forEach((change) => {
+        if (change.type === 'remove') {
+          deleteEdgeMutation.mutate(change.id);
+        }
+      });
+
+      return applyEdgeChanges(changes, edges);
+    },
+    [edges, deleteEdgeMutation]
+  );
 
   const handleToggleSpecialty = useCallback((specialty: string) => {
     setActiveSpecialties((prev) =>
@@ -186,13 +247,16 @@ export default function Home() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            <Accordion type="multiple" defaultValue={['add', 'filter']} className="space-y-2">
-              <AccordionItem value="add">
+            <Accordion type="multiple" defaultValue={['select', 'filter']} className="space-y-2">
+              <AccordionItem value="select">
                 <AccordionTrigger className="text-base font-medium">
-                  ノードを追加
+                  名鑑から選択
                 </AccordionTrigger>
                 <AccordionContent>
-                  <AddNodeForm onSubmit={handleAddNode} />
+                  <NodeSelector
+                    selectedNodeIds={selectedNodeIds}
+                    onSelectNode={handleSelectNode}
+                  />
                 </AccordionContent>
               </AccordionItem>
 
@@ -211,23 +275,6 @@ export default function Home() {
                   />
                 </AccordionContent>
               </AccordionItem>
-
-              <AccordionItem value="upload">
-                <AccordionTrigger className="text-base font-medium">
-                  ドキュメントアップロード
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      委員会リストやガイドラインをアップロードして、自動的にマップを生成できます。
-                    </p>
-                    <Button variant="outline" className="w-full" disabled data-testid="button-upload-document">
-                      <Upload className="w-4 h-4 mr-2" />
-                      ファイルを選択（準備中）
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
             </Accordion>
           </div>
         </aside>
@@ -237,8 +284,8 @@ export default function Home() {
             <NetworkCanvas
               nodes={filteredNodes}
               edges={edges}
-              onNodesChange={setNodes}
-              onEdgesChange={setEdges}
+              onNodesChange={handleNodesChange}
+              onEdgesChange={handleEdgesChange}
               onNodeClick={handleNodeClick}
               onConnect={handleConnect}
               showLabels={showLabels}
