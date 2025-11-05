@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { ReactFlowProvider, Node, Edge, Connection, NodeChange, EdgeChange, applyNodeChanges, applyEdgeChanges } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -20,17 +20,80 @@ import {
 } from '@/components/ui/accordion';
 import type { Node as DBNode, Edge as DBEdge } from '@shared/schema';
 
+const STORAGE_KEYS = {
+  SELECTED_NODE_IDS: 'influencerMap.selectedNodeIds',
+  ACTIVE_SPECIALTIES: 'influencerMap.activeSpecialties',
+  ACTIVE_REGIONS: 'influencerMap.activeRegions',
+  SIDEBAR_VISIBLE: 'influencerMap.sidebarVisible',
+  SHOW_LABELS: 'influencerMap.showLabels',
+};
+
 export default function Home() {
   const { toast } = useToast();
-  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_NODE_IDS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [selectedNode, setSelectedNode] = useState<Node<CustomNodeData> | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<DBEdge | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [edgeLabelDialogOpen, setEdgeLabelDialogOpen] = useState(false);
-  const [showLabels, setShowLabels] = useState(true);
-  const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [activeSpecialties, setActiveSpecialties] = useState<string[]>([]);
-  const [activeRegions, setActiveRegions] = useState<string[]>([]);
+  const [showLabels, setShowLabels] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SHOW_LABELS);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+  const [sidebarVisible, setSidebarVisible] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SIDEBAR_VISIBLE);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+  const [activeSpecialties, setActiveSpecialties] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_SPECIALTIES);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [activeRegions, setActiveRegions] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_REGIONS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SELECTED_NODE_IDS, JSON.stringify(selectedNodeIds));
+  }, [selectedNodeIds]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SPECIALTIES, JSON.stringify(activeSpecialties));
+  }, [activeSpecialties]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_REGIONS, JSON.stringify(activeRegions));
+  }, [activeRegions]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_VISIBLE, JSON.stringify(sidebarVisible));
+  }, [sidebarVisible]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SHOW_LABELS, JSON.stringify(showLabels));
+  }, [showLabels]);
 
   const { data: dbNodes = [] } = useQuery<DBNode[]>({
     queryKey: ['/api/nodes'],
