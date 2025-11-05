@@ -14,7 +14,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, MapPin, Network, Plus, Edit, Trash2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search, MapPin, Network, Plus, Edit, Trash2, ArrowUpDown } from 'lucide-react';
 import { useLocation } from 'wouter';
 import AddNodeForm from '@/components/AddNodeForm';
 import EditNodeDialog from '@/components/EditNodeDialog';
@@ -46,13 +53,14 @@ export default function Directory() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Node | null>(null);
   const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>('name-asc');
   const [, setLocation] = useLocation();
 
   const specialties = Array.from(new Set(people.map(p => p.specialty).filter(Boolean)));
   const regions = Array.from(new Set(people.map(p => p.region).filter(Boolean)));
 
   const filteredPeople = useMemo(() => {
-    return people.filter(person => {
+    const filtered = people.filter(person => {
       const matchesSearch = !searchQuery || 
         person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (person.facilityName && person.facilityName.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -63,7 +71,37 @@ export default function Directory() {
 
       return matchesSearch && matchesSpecialty && matchesRegion;
     });
-  }, [people, searchQuery, selectedSpecialty, selectedRegion]);
+
+    // ソート処理
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name, 'ja');
+        case 'name-desc':
+          return b.name.localeCompare(a.name, 'ja');
+        case 'gradYear-asc':
+          return (a.graduationYear || '').localeCompare(b.graduationYear || '');
+        case 'gradYear-desc':
+          return (b.graduationYear || '').localeCompare(a.graduationYear || '');
+        case 'gradUniv-asc':
+          return (a.graduationUniversity || '').localeCompare(b.graduationUniversity || '', 'ja');
+        case 'gradUniv-desc':
+          return (b.graduationUniversity || '').localeCompare(a.graduationUniversity || '', 'ja');
+        case 'facility-asc':
+          return (a.facilityName || '').localeCompare(b.facilityName || '', 'ja');
+        case 'facility-desc':
+          return (b.facilityName || '').localeCompare(a.facilityName || '', 'ja');
+        case 'appointment-asc':
+          return (a.appointmentDate || '').localeCompare(b.appointmentDate || '');
+        case 'appointment-desc':
+          return (b.appointmentDate || '').localeCompare(a.appointmentDate || '');
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [people, searchQuery, selectedSpecialty, selectedRegion, sortBy]);
 
   const togglePersonSelection = (personId: string) => {
     const newSelection = new Set(selectedPeople);
@@ -218,6 +256,27 @@ export default function Directory() {
                 data-testid="input-search"
               />
             </div>
+          </div>
+
+          <div className="min-w-[200px]">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger data-testid="select-sort">
+                <ArrowUpDown className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="並び替え" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name-asc">名前（昇順）</SelectItem>
+                <SelectItem value="name-desc">名前（降順）</SelectItem>
+                <SelectItem value="gradYear-asc">卒年（古い順）</SelectItem>
+                <SelectItem value="gradYear-desc">卒年（新しい順）</SelectItem>
+                <SelectItem value="gradUniv-asc">出身大学（昇順）</SelectItem>
+                <SelectItem value="gradUniv-desc">出身大学（降順）</SelectItem>
+                <SelectItem value="facility-asc">施設名（昇順）</SelectItem>
+                <SelectItem value="facility-desc">施設名（降順）</SelectItem>
+                <SelectItem value="appointment-asc">就任日（古い順）</SelectItem>
+                <SelectItem value="appointment-desc">就任日（新しい順）</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-2 flex-wrap">
