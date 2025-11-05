@@ -143,8 +143,8 @@ export default function NetworkCanvas({
             variant="outline"
             size="icon"
             onClick={onToggleSidebar}
-            data-testid="button-toggle-sidebar"
-            title={sidebarVisible ? 'サイドバーを隠す' : 'サイドバーを表示'}
+            data-testid="button-toggle-map-sidebar"
+            title={sidebarVisible ? 'フィルターサイドバーを隠す' : 'フィルターサイドバーを表示'}
           >
             {sidebarVisible ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
           </Button>

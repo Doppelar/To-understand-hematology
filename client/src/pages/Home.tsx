@@ -164,6 +164,13 @@ export default function Home() {
     });
   }, [nodes, activeSpecialties, activeRegions]);
 
+  const filteredEdges = useMemo(() => {
+    const filteredNodeIds = new Set(filteredNodes.map((n) => n.id));
+    return edges.filter((edge) =>
+      filteredNodeIds.has(edge.source) && filteredNodeIds.has(edge.target)
+    );
+  }, [edges, filteredNodes]);
+
   const handleSelectNode = useCallback((nodeId: string) => {
     setSelectedNodeIds((prev) =>
       prev.includes(nodeId) ? prev.filter((id) => id !== nodeId) : [...prev, nodeId]
@@ -343,7 +350,7 @@ export default function Home() {
           <div className="flex-1 overflow-hidden relative">
             <NetworkCanvas
               nodes={filteredNodes}
-              edges={edges}
+              edges={filteredEdges}
               onNodesChange={handleNodesChange}
               onEdgesChange={handleEdgesChange}
               onNodeClick={handleNodeClick}
