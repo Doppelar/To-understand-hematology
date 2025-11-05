@@ -159,3 +159,15 @@ Preferred communication style: Simple, everyday language.
   - React Flow edges display appropriate arrow markers based on direction
   - Sidebar toggle button for mobile/small screen optimization (PanelLeftClose/PanelLeft icons)
   - Conditional sidebar rendering to maximize map viewing area
+- **Societies Page Database Integration**:
+  - Migrated Societies page from mock data to PostgreSQL database
+  - Added theme field to conferences table for academic conference themes
+  - Created `/api/societies-with-relations` endpoint for efficient data fetching
+  - Implemented comprehensive error handling with dedicated error screens
+  - Fixed React state management issues with proper useEffect usage
+  - Established correct early return order: error → isLoading → empty data → missing selection
+  - Created seed script (`server/seed.ts`) for initial society and conference data
+  - Seed script includes truncate-before-insert to prevent duplicates on repeated runs
+  - All CRUD operations (create, update, delete) for conferences now persist to database
+  - TanStack Query integration with proper cache invalidation
+  - Note: N+1 query optimization deferred as acceptable for current data volume
