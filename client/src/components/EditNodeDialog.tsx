@@ -20,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Upload, Save, Trash2 } from 'lucide-react';
+import { Upload, Save, Trash2, ImagePlus } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MEDICAL_UNIVERSITIES } from '@shared/universities';
+import { ObjectUploader } from '@/components/ObjectUploader';
 
 const formSchema = z.object({
   name: z.string().min(1, '氏名を入力してください'),
@@ -101,14 +102,20 @@ export default function EditNodeDialog({
     return MEDICAL_UNIVERSITIES[selectedRegion] || [];
   }, [selectedRegion]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleUploadComplete = async (uploadedURL: string) => {
+    try {
+      const response = await fetch('/api/photos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoURL: uploadedURL }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to normalize photo URL');
+      }
+      const { objectPath } = await response.json();
+      setPhotoPreview(objectPath);
+    } catch (error) {
+      console.error('Photo URL normalization error:', error);
     }
   };
 
@@ -145,16 +152,14 @@ export default function EditNodeDialog({
                   <Upload className="w-6 h-6 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <Input
-                  id="edit-photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="cursor-pointer"
-                  data-testid="input-edit-photo"
-                />
-              </div>
+              <ObjectUploader
+                maxFileSize={10485760}
+                onComplete={handleUploadComplete}
+                buttonClassName="flex-1"
+              >
+                <ImagePlus className="w-4 h-4 mr-2" />
+                写真をアップロード
+              </ObjectUploader>
             </div>
           </div>
 
