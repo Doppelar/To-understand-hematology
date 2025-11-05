@@ -13,9 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Upload, Plus } from 'lucide-react';
+import { Upload, Plus, ImagePlus } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MEDICAL_UNIVERSITIES } from '@shared/universities';
+import { ObjectUploader } from '@/components/ObjectUploader';
 
 const formSchema = z.object({
   name: z.string().min(1, '氏名を入力してください'),
@@ -36,7 +37,7 @@ type AddNodeFormProps = {
 };
 
 export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
-  const [photoPreview, setPhotoPreview] = useState<string>();
+  const [photoUrl, setPhotoUrl] = useState<string>();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -59,21 +60,27 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
     return MEDICAL_UNIVERSITIES[selectedRegion] || [];
   }, [selectedRegion]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleUploadComplete = async (uploadedURL: string) => {
+    try {
+      const response = await fetch('/api/photos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoURL: uploadedURL }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to normalize photo URL');
+      }
+      const { objectPath } = await response.json();
+      setPhotoUrl(objectPath);
+    } catch (error) {
+      console.error('Photo URL normalization error:', error);
     }
   };
 
   const handleSubmit = (data: FormData) => {
-    onSubmit({ ...data, photoUrl: photoPreview });
+    onSubmit({ ...data, photoUrl });
     form.reset();
-    setPhotoPreview(undefined);
+    setPhotoUrl(undefined);
   };
 
   return (
@@ -82,21 +89,19 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
         <Label htmlFor="photo">写真</Label>
         <div className="flex items-center gap-4">
           <Avatar className="w-16 h-16">
-            <AvatarImage src={photoPreview} />
+            <AvatarImage src={photoUrl} />
             <AvatarFallback>
               <Upload className="w-6 h-6 text-muted-foreground" />
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1">
-            <Input
-              id="photo"
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              className="cursor-pointer"
-              data-testid="input-photo"
-            />
-          </div>
+          <ObjectUploader
+            maxFileSize={10485760}
+            onComplete={handleUploadComplete}
+            buttonClassName="flex-1"
+          >
+            <ImagePlus className="w-4 h-4 mr-2" />
+            写真をアップロード
+          </ObjectUploader>
         </div>
       </div>
 

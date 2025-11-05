@@ -128,7 +128,7 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## 2025-11-05: Database Integration & New Fields
+## 2025-11-05: Database Integration, New Fields & Photo Upload
 - Migrated from in-memory storage to PostgreSQL database
 - Implemented full CRUD API routes for all data models
 - Added DatabaseStorage class using Drizzle ORM
@@ -139,3 +139,9 @@ Preferred communication style: Simple, everyday language.
   - retirementDate (退官日): Retirement date
 - Role selection now uses HTML datalist with predefined options
 - Network map visualization simplified (removed region and specialty badges from node display)
+- **Photo Upload Feature**:
+  - Integrated Replit Object Storage for professional photos
+  - Created ObjectUploader component for file uploads
+  - Photos stored in private object directory, served via /objects/:path route
+  - Presigned URL upload mechanism for direct client-to-storage uploads
+  - Automatic path normalization and database storage of photo URLs
