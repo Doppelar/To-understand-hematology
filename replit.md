@@ -173,3 +173,21 @@ Preferred communication style: Simple, everyday language.
   - Fixed apiRequest calls in mutations (corrected argument order: method, url, data)
   - Added aria-describedby attributes to DialogContent for accessibility compliance
   - Note: N+1 query optimization deferred as acceptable for current data volume
+- **Society Officials Management**:
+  - Added institution (就任機関) field to society_officials table for tracking officials' affiliated organizations
+  - Created OfficialForm component with fields for person selection, position, term, and institution
+  - Implemented full CRUD operations for society officials:
+    - POST /api/society-officials - Create new official
+    - PATCH /api/society-officials/:id - Update existing official
+    - DELETE /api/society-officials/:id - Delete official
+  - Added updateSocietyOfficial method to IStorage interface and both storage implementations
+  - Enhanced `/api/societies-with-relations` endpoint to include nodeId and institution fields
+  - Integrated officials management UI into Societies.tsx:
+    - Add official button with dialog form
+    - Edit button for each official row
+    - Delete button with confirmation dialog
+    - Display institution column in officials table
+  - All mutations use correct apiRequest parameter order (method, url, data)
+  - TanStack Query cache invalidation on all CRUD operations
+  - Comprehensive error handling with toast notifications
+  - E2E tested: create, edit, and delete operations verified working
