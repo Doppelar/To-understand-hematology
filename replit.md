@@ -170,4 +170,6 @@ Preferred communication style: Simple, everyday language.
   - Seed script includes truncate-before-insert to prevent duplicates on repeated runs
   - All CRUD operations (create, update, delete) for conferences now persist to database
   - TanStack Query integration with proper cache invalidation
+  - Fixed apiRequest calls in mutations (corrected argument order: method, url, data)
+  - Added aria-describedby attributes to DialogContent for accessibility compliance
   - Note: N+1 query optimization deferred as acceptable for current data volume

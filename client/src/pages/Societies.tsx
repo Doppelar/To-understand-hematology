@@ -81,18 +81,15 @@ export default function Societies() {
   // Add conference mutation
   const addConferenceMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('/api/conferences', {
-        method: 'POST',
-        body: JSON.stringify({
-          societyId: selectedSociety,
-          year: data.year,
-          number: data.number || '',
-          title: data.title,
-          theme: data.theme || null,
-          location: data.location || '',
-          president: data.president || '',
-          date: data.date || '',
-        }),
+      return await apiRequest('POST', '/api/conferences', {
+        societyId: selectedSociety,
+        year: data.year,
+        number: data.number || '',
+        title: data.title,
+        theme: data.theme || null,
+        location: data.location || '',
+        president: data.president || '',
+        date: data.date || '',
       });
     },
     onSuccess: () => {
@@ -114,17 +111,14 @@ export default function Societies() {
   // Edit conference mutation
   const editConferenceMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest(`/api/conferences/${data.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          year: data.year,
-          number: data.number || '',
-          title: data.title,
-          theme: data.theme || null,
-          location: data.location || '',
-          president: data.president || '',
-          date: data.date || '',
-        }),
+      return await apiRequest('PATCH', `/api/conferences/${data.id}`, {
+        year: data.year,
+        number: data.number || '',
+        title: data.title,
+        theme: data.theme || null,
+        location: data.location || '',
+        president: data.president || '',
+        date: data.date || '',
       });
     },
     onSuccess: () => {
@@ -146,9 +140,7 @@ export default function Societies() {
   // Delete conference mutation
   const deleteConferenceMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/conferences/${id}`, {
-        method: 'DELETE',
-      });
+      return await apiRequest('DELETE', `/api/conferences/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
@@ -363,9 +355,10 @@ export default function Societies() {
       </div>
 
       <Dialog open={addConferenceDialogOpen} onOpenChange={setAddConferenceDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" aria-describedby="add-conference-description">
           <DialogHeader>
             <DialogTitle>学術集会を追加</DialogTitle>
+            <p id="add-conference-description" className="sr-only">新しい学術集会を追加するフォーム</p>
           </DialogHeader>
           <ConferenceForm
             onSubmit={handleAddConference}
@@ -375,9 +368,10 @@ export default function Societies() {
       </Dialog>
 
       <Dialog open={!!editingConference} onOpenChange={(open) => !open && setEditingConference(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" aria-describedby="edit-conference-description">
           <DialogHeader>
             <DialogTitle>学術集会を編集</DialogTitle>
+            <p id="edit-conference-description" className="sr-only">既存の学術集会を編集するフォーム</p>
           </DialogHeader>
           {editingConference && (
             <ConferenceForm
