@@ -1,4 +1,4 @@
-import { Book, Network, Users } from 'lucide-react';
+import { Book, Network, Users, Brain } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import {
   Sidebar,
@@ -26,6 +26,11 @@ const menuItems = [
     title: '学会',
     url: '/societies',
     icon: Users,
+  },
+  {
+    title: 'クイズ',
+    url: '/quiz',
+    icon: Brain,
   },
 ];
 

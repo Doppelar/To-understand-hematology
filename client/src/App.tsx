@@ -9,6 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Home from "@/pages/Home";
 import Directory from "@/pages/Directory";
 import Societies from "@/pages/Societies";
+import Quiz from "@/pages/Quiz";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/directory" component={Directory} />
       <Route path="/societies" component={Societies} />
+      <Route path="/quiz" component={Quiz} />
       <Route component={NotFound} />
     </Switch>
   );
