@@ -288,6 +288,7 @@ export default function Directory() {
                   <TableHead>氏名</TableHead>
                   <TableHead>施設</TableHead>
                   <TableHead>役職</TableHead>
+                  <TableHead>出身大学</TableHead>
                   <TableHead>卒年</TableHead>
                   <TableHead>就任日</TableHead>
                   <TableHead>退官日</TableHead>
@@ -322,6 +323,7 @@ export default function Directory() {
                     <TableCell className="font-medium">{person.name}</TableCell>
                     <TableCell>{person.facilityName || ''}</TableCell>
                     <TableCell>{person.position || ''}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{person.graduationUniversity}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{person.graduationYear}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{person.appointmentDate}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{person.retirementDate}</TableCell>

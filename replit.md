@@ -134,7 +134,8 @@ Preferred communication style: Simple, everyday language.
 - Added DatabaseStorage class using Drizzle ORM
 - Updated Directory page to use TanStack Query for data fetching
 - Added new fields to nodes:
-  - graduationYear (出身大学卒年): University graduation year
+  - graduationUniversity (出身大学): Graduation university name
+  - graduationYear (卒年): University graduation year
   - appointmentDate (就任日): Position appointment date
   - retirementDate (退官日): Retirement date
 - Role selection now uses HTML datalist with predefined options

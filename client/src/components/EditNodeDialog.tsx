@@ -31,6 +31,7 @@ const formSchema = z.object({
   career: z.string().optional(),
   specialty: z.string().optional(),
   region: z.string().optional(),
+  graduationUniversity: z.string().optional(),
   graduationYear: z.string().optional(),
   appointmentDate: z.string().optional(),
   retirementDate: z.string().optional(),
@@ -69,6 +70,7 @@ export default function EditNodeDialog({
       career: '',
       specialty: '',
       region: '',
+      graduationUniversity: '',
       graduationYear: '',
       appointmentDate: '',
       retirementDate: '',
@@ -84,6 +86,7 @@ export default function EditNodeDialog({
         career: node.career || '',
         specialty: node.specialty || '',
         region: node.region || '',
+        graduationUniversity: (node as any).graduationUniversity || '',
         graduationYear: (node as any).graduationYear || '',
         appointmentDate: (node as any).appointmentDate || '',
         retirementDate: (node as any).retirementDate || '',
@@ -224,14 +227,26 @@ export default function EditNodeDialog({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-graduationYear">出身大学卒年</Label>
-            <Input
-              id="edit-graduationYear"
-              {...form.register('graduationYear')}
-              placeholder="例: 1990年、1995年3月など"
-              data-testid="input-edit-graduation-year"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-graduationUniversity">出身大学</Label>
+              <Input
+                id="edit-graduationUniversity"
+                {...form.register('graduationUniversity')}
+                placeholder="例: 東京大学"
+                data-testid="input-edit-graduation-university"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-graduationYear">卒年</Label>
+              <Input
+                id="edit-graduationYear"
+                {...form.register('graduationYear')}
+                placeholder="例: 1990年"
+                data-testid="input-edit-graduation-year"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

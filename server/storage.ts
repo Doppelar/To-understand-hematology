@@ -85,6 +85,7 @@ export class MemStorage implements IStorage {
       specialty: insertNode.specialty ?? null,
       region: insertNode.region ?? null,
       photoUrl: insertNode.photoUrl ?? null,
+      graduationUniversity: insertNode.graduationUniversity ?? null,
       graduationYear: insertNode.graduationYear ?? null,
       appointmentDate: insertNode.appointmentDate ?? null,
       retirementDate: insertNode.retirementDate ?? null,

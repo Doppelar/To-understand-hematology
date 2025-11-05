@@ -12,6 +12,7 @@ export const nodes = pgTable("nodes", {
   specialty: text("specialty"),
   region: text("region"),
   photoUrl: text("photo_url"),
+  graduationUniversity: text("graduation_university"),
   graduationYear: text("graduation_year"),
   appointmentDate: text("appointment_date"),
   retirementDate: text("retirement_date"),
