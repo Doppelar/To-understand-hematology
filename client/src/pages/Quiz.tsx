@@ -33,23 +33,24 @@ export default function Quiz() {
     return people.filter(p => p.photoUrl || p.graduationUniversity || p.facilityName);
   }, [people]);
 
-  // クイズ問題を生成
+  // クイズ問題を生成（quizStateが'quiz'の時だけ生成）
   const questions = useMemo<QuizQuestion[]>(() => {
-    if (validPeople.length < 4) return [];
+    if (validPeople.length < 4 || quizState !== 'quiz') return [];
     
     const shuffled = [...validPeople].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
     
     return selected.map((person, index) => {
-      // 問題タイプを決定（写真がある場合は写真、なければ大学か施設）
-      let type: 'photo' | 'university' | 'facility';
-      if (person.photoUrl && Math.random() > 0.3) {
-        type = 'photo';
-      } else if (person.graduationUniversity && Math.random() > 0.5) {
-        type = 'university';
-      } else {
-        type = 'facility';
-      }
+      // 問題タイプを決定（利用可能なデータに基づく）
+      const availableTypes: ('photo' | 'university' | 'facility')[] = [];
+      if (person.photoUrl) availableTypes.push('photo');
+      if (person.graduationUniversity) availableTypes.push('university');
+      if (person.facilityName) availableTypes.push('facility');
+      
+      // 利用可能なタイプがない場合はスキップ（フィルタリング済みなので通常は発生しない）
+      const type = availableTypes.length > 0 
+        ? availableTypes[Math.floor(Math.random() * availableTypes.length)]
+        : 'photo'; // フォールバック
 
       // 選択肢を生成（正解 + 3つの不正解）
       const otherPeople = validPeople.filter(p => p.id !== person.id);
@@ -59,7 +60,7 @@ export default function Quiz() {
 
       return { person, type, options };
     });
-  }, [validPeople, questionCount]);
+  }, [validPeople, questionCount, quizState]);
 
   const currentQuestion = questions[currentQuestionIndex];
 
@@ -241,6 +242,26 @@ export default function Quiz() {
                   variant = 'destructive';
                 }
 
+                // 問題タイプに応じて表示する情報を制御
+                const getOptionDetails = () => {
+                  if (!showResult) {
+                    // 回答前は問題のヒントになる情報を隠す
+                    if (currentQuestion.type === 'facility') {
+                      // 施設名の問題では施設名を隠す
+                      return option.position || '';
+                    } else if (currentQuestion.type === 'university') {
+                      // 大学名の問題では大学名を隠す（施設と役職は表示）
+                      return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
+                    } else {
+                      // 写真問題では施設と役職を表示
+                      return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
+                    }
+                  } else {
+                    // 回答後は全て表示
+                    return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
+                  }
+                };
+
                 return (
                   <Button
                     key={option.id}
@@ -253,13 +274,13 @@ export default function Quiz() {
                   >
                     <div className="flex items-center gap-4 w-full">
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={option.photoUrl || ''} />
+                        <AvatarImage src={currentQuestion.type === 'photo' && !showResult ? '' : option.photoUrl || ''} />
                         <AvatarFallback>{option.name[0]}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 text-left">
                         <div className="font-semibold">{option.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {option.facilityName} {option.position && `・${option.position}`}
+                          {getOptionDetails()}
                         </div>
                       </div>
                     </div>
@@ -310,7 +331,8 @@ export default function Quiz() {
 
   // 結果画面
   if (quizState === 'result') {
-    const percentage = Math.round((score / questions.length) * 100);
+    const totalQuestions = questionCount;
+    const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
     
     return (
       <div className="h-full flex items-center justify-center bg-background p-4">
@@ -322,7 +344,7 @@ export default function Quiz() {
           <CardContent className="space-y-6">
             <div className="text-center space-y-2">
               <div className="text-6xl font-bold text-primary" data-testid="text-final-score">
-                {score} / {questions.length}
+                {score} / {totalQuestions}
               </div>
               <div className="text-2xl text-muted-foreground" data-testid="text-percentage">
                 正解率: {percentage}%
@@ -331,16 +353,16 @@ export default function Quiz() {
 
             <div className="text-center">
               {percentage === 100 && (
-                <Badge className="text-lg py-2 px-4">完璧です！🎉</Badge>
+                <Badge className="text-lg py-2 px-4">完璧です</Badge>
               )}
               {percentage >= 80 && percentage < 100 && (
-                <Badge className="text-lg py-2 px-4">素晴らしい！👏</Badge>
+                <Badge className="text-lg py-2 px-4">素晴らしい</Badge>
               )}
               {percentage >= 60 && percentage < 80 && (
-                <Badge variant="secondary" className="text-lg py-2 px-4">良くできました！👍</Badge>
+                <Badge variant="secondary" className="text-lg py-2 px-4">良くできました</Badge>
               )}
               {percentage < 60 && (
-                <Badge variant="outline" className="text-lg py-2 px-4">もう一度挑戦！💪</Badge>
+                <Badge variant="outline" className="text-lg py-2 px-4">もう一度挑戦</Badge>
               )}
             </div>
           </CardContent>
