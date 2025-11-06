@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, MapPin, Network, Plus, Edit, Trash2, ArrowUpDown } from 'lucide-react';
+import { Search, MapPin, Network, Plus, Edit, Trash2, ArrowUpDown, FileSpreadsheet } from 'lucide-react';
 import { useLocation } from 'wouter';
 import AddNodeForm from '@/components/AddNodeForm';
 import EditNodeDialog from '@/components/EditNodeDialog';
@@ -40,6 +40,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import type { Node } from '@shared/schema';
 import { Skeleton } from '@/components/ui/skeleton';
+import * as XLSX from 'xlsx';
 
 export default function Directory() {
   const { toast } = useToast();
@@ -220,6 +221,49 @@ export default function Directory() {
     deleteMutation.mutate(id);
   };
 
+  const handleExportToExcel = () => {
+    if (filteredPeople.length === 0) {
+      toast({
+        title: 'エクスポートできません',
+        description: '表示するデータがありません',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Excelデータの準備
+    const excelData = filteredPeople.map(person => ({
+      '名前': person.name,
+      '出身大学': person.graduationUniversity || '',
+      '卒年': person.graduationYear || '',
+      '施設名': person.facilityName || '',
+      '役職': person.position || '',
+      '専門分野': person.specialty || '',
+      '地域': person.region || '',
+      '就任日': person.appointmentDate || '',
+      '退官日': person.retirementDate || '',
+    }));
+
+    // ワークシートとワークブックの作成
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '名鑑');
+
+    // ファイル名の生成（現在日時を含む）
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+    const filename = `血液内科名鑑_${dateStr}_${timeStr}.xlsx`;
+
+    // ファイルのダウンロード
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: 'エクスポート完了',
+      description: `${filteredPeople.length}件のデータをExcelファイルに出力しました`,
+    });
+  };
+
   return (
     <div className="h-full flex flex-col bg-background">
       <header className="border-b p-4">
@@ -237,6 +281,14 @@ export default function Directory() {
                 </Button>
               </>
             )}
+            <Button 
+              onClick={handleExportToExcel} 
+              variant="outline"
+              data-testid="button-export-excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Excel出力
+            </Button>
             <Button onClick={() => setAddDialogOpen(true)} data-testid="button-add-person">
               <Plus className="w-4 h-4 mr-2" />
               新規追加
