@@ -48,7 +48,6 @@ export default function Directory() {
     queryKey: ['/api/nodes'],
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -57,7 +56,6 @@ export default function Directory() {
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [, setLocation] = useLocation();
 
-  const specialties = Array.from(new Set(people.map(p => p.specialty).filter(Boolean)));
   const regions = Array.from(new Set(people.map(p => p.region).filter(Boolean)));
 
   const filteredPeople = useMemo(() => {
@@ -67,10 +65,9 @@ export default function Directory() {
         (person.facilityName && person.facilityName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (person.position && person.position.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesSpecialty = !selectedSpecialty || person.specialty === selectedSpecialty;
       const matchesRegion = !selectedRegion || person.region === selectedRegion;
 
-      return matchesSearch && matchesSpecialty && matchesRegion;
+      return matchesSearch && matchesRegion;
     });
 
     // ソート処理
@@ -102,7 +99,7 @@ export default function Directory() {
     });
 
     return sorted;
-  }, [people, searchQuery, selectedSpecialty, selectedRegion, sortBy]);
+  }, [people, searchQuery, selectedRegion, sortBy]);
 
   const togglePersonSelection = (personId: string) => {
     const newSelection = new Set(selectedPeople);
@@ -329,20 +326,6 @@ export default function Directory() {
                 <SelectItem value="appointment-desc">就任日（新しい順）</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="flex gap-2 flex-wrap">
-            {specialties.map(specialty => (
-              <Badge
-                key={specialty}
-                variant={selectedSpecialty === specialty ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() => setSelectedSpecialty(selectedSpecialty === specialty ? null : specialty!)}
-                data-testid={`filter-specialty-${specialty}`}
-              >
-                {specialty}
-              </Badge>
-            ))}
           </div>
 
           <div className="flex gap-2 flex-wrap">

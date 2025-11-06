@@ -221,3 +221,9 @@ Preferred communication style: Simple, everyday language.
   - Year-based comparison logic (simpler than date parsing for Japanese date formats)
   - Visual distinction between past and upcoming conferences
   - E2E tested: verified correct sorting order and highlighting of 2025+ conferences
+- **Directory Filter Simplification**:
+  - Removed specialty filter badges from Directory page header (too many options)
+  - Kept region filter badges only for cleaner UI
+  - Specialty data still displayed in table column
+  - Filtering now uses only search input and region badges
+  - E2E tested: verified region filtering works correctly without specialty filters
