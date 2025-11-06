@@ -345,12 +345,23 @@ export default function Societies() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {society.conferences.map(conference => (
-                      <div
-                        key={conference.id}
-                        className="p-4 rounded-md border hover-elevate"
-                        data-testid={`conference-${conference.id}`}
-                      >
+                    {[...society.conferences]
+                      .sort((a, b) => {
+                        const yearA = parseInt(a.year);
+                        const yearB = parseInt(b.year);
+                        return yearB - yearA;
+                      })
+                      .map(conference => {
+                        const currentYear = new Date().getFullYear();
+                        const conferenceYear = parseInt(conference.year);
+                        const isUpcoming = conferenceYear >= currentYear;
+                        
+                        return (
+                          <div
+                            key={conference.id}
+                            className={`p-4 rounded-md border hover-elevate ${isUpcoming ? 'bg-primary/5 border-primary/20' : ''}`}
+                            data-testid={`conference-${conference.id}`}
+                          >
                         <div className="flex items-start justify-between gap-4 flex-wrap">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
@@ -399,7 +410,8 @@ export default function Societies() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                        );
+                      })}
                   </div>
                 </CardContent>
               </Card>

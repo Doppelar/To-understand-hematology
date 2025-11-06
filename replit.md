@@ -204,3 +204,20 @@ Preferred communication style: Simple, everyday language.
   - Sorting logic integrated into filteredPeople useMemo for performance
   - Uses localeCompare with 'ja' parameter for proper Japanese text sorting
   - E2E tested: verified all 10 sort options work correctly
+
+## 2025-11-06: Excel Export & Conference Sorting/Highlighting
+- **Directory Excel Export Feature**:
+  - Added Excel export button to Directory page header
+  - Exports filtered/sorted data to .xlsx file using `xlsx` library
+  - Filename includes timestamp: `血液内科名鑑_YYYYMMDD_HHMM.xlsx`
+  - Exported columns: 名前, 出身大学, 卒年, 施設名, 役職, 専門分野, 地域, 就任日, 退官日
+  - Error handling: prevents export when no data available with toast notification
+  - Success notification shows count of exported records
+  - E2E tested: full data export, filtered data export, empty data error handling
+- **Societies Conference Sorting & Highlighting**:
+  - Conferences now sorted by year in descending order (newest first)
+  - Upcoming conferences (year >= current year) highlighted with distinct styling
+  - Highlight styling: `bg-primary/5` background and `border-primary/20` border
+  - Year-based comparison logic (simpler than date parsing for Japanese date formats)
+  - Visual distinction between past and upcoming conferences
+  - E2E tested: verified correct sorting order and highlighting of 2025+ conferences
