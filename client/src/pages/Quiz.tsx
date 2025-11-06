@@ -23,6 +23,7 @@ export default function Quiz() {
 
   const [quizState, setQuizState] = useState<QuizState>('setup');
   const [questionCount, setQuestionCount] = useState<number>(5);
+  const [actualQuestionCount, setActualQuestionCount] = useState<number>(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -71,6 +72,10 @@ export default function Quiz() {
     setScore(0);
     setSelectedAnswer(null);
     setShowResult(false);
+    
+    // 実際の問題数を計算して保存（次の再レンダリング後にquestionsが生成される）
+    const availableCount = Math.min(count, validPeople.length);
+    setActualQuestionCount(availableCount);
   };
 
   const handleAnswer = (answerId: string) => {
@@ -257,8 +262,13 @@ export default function Quiz() {
                       return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
                     }
                   } else {
-                    // 回答後は全て表示
-                    return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
+                    // 回答後は全て表示（大学名、施設名、役職）
+                    const parts = [
+                      option.graduationUniversity,
+                      option.facilityName,
+                      option.position,
+                    ].filter(Boolean);
+                    return parts.join(' ・ ');
                   }
                 };
 
@@ -331,7 +341,7 @@ export default function Quiz() {
 
   // 結果画面
   if (quizState === 'result') {
-    const totalQuestions = questionCount;
+    const totalQuestions = actualQuestionCount;
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
     
     return (
