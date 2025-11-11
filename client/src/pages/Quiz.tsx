@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Brain, Trophy, RotateCcw, ArrowRight } from 'lucide-react';
 import type { Node } from '@shared/schema';
 import { Skeleton } from '@/components/ui/skeleton';
 
+type QuestionType = 'photo' | 'university' | 'facility' | 'region';
+
 type QuizQuestion = {
   person: Node;
-  type: 'photo' | 'university' | 'facility';
+  type: QuestionType;
   options: Node[];
 };
 
@@ -23,35 +27,50 @@ export default function Quiz() {
 
   const [quizState, setQuizState] = useState<QuizState>('setup');
   const [questionCount, setQuestionCount] = useState<number>(5);
+  const [selectedQuestionTypes, setSelectedQuestionTypes] = useState<QuestionType[]>([
+    'region',
+    'photo',
+    'university',
+    'facility',
+  ]);
   const [actualQuestionCount, setActualQuestionCount] = useState<number>(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
 
-  // フィルタリング：写真や大学情報があるデータのみ
+  // フィルタリング：選択された問題タイプに基づいてデータを絞り込む
   const validPeople = useMemo(() => {
-    return people.filter(p => p.photoUrl || p.graduationUniversity || p.facilityName);
-  }, [people]);
+    return people.filter(p => {
+      // 選択された問題タイプのいずれかで有効なデータがあればOK
+      const hasPhoto = selectedQuestionTypes.includes('photo') && p.photoUrl;
+      const hasUniversity = selectedQuestionTypes.includes('university') && p.graduationUniversity;
+      const hasFacility = selectedQuestionTypes.includes('facility') && p.facilityName;
+      const hasRegion = selectedQuestionTypes.includes('region') && p.region;
+      
+      return hasPhoto || hasUniversity || hasFacility || hasRegion;
+    });
+  }, [people, selectedQuestionTypes]);
 
   // クイズ問題を生成（quizStateが'quiz'の時だけ生成）
   const questions = useMemo<QuizQuestion[]>(() => {
-    if (validPeople.length < 4 || quizState !== 'quiz') return [];
+    if (validPeople.length < 4 || quizState !== 'quiz' || selectedQuestionTypes.length === 0) return [];
     
     const shuffled = [...validPeople].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
     
-    return selected.map((person, index) => {
-      // 問題タイプを決定（利用可能なデータに基づく）
-      const availableTypes: ('photo' | 'university' | 'facility')[] = [];
-      if (person.photoUrl) availableTypes.push('photo');
-      if (person.graduationUniversity) availableTypes.push('university');
-      if (person.facilityName) availableTypes.push('facility');
+    return selected.map((person) => {
+      // 問題タイプを決定（選択された問題タイプの中で、その人物が持っているデータに基づく）
+      const availableTypes: QuestionType[] = [];
+      if (selectedQuestionTypes.includes('photo') && person.photoUrl) availableTypes.push('photo');
+      if (selectedQuestionTypes.includes('university') && person.graduationUniversity) availableTypes.push('university');
+      if (selectedQuestionTypes.includes('facility') && person.facilityName) availableTypes.push('facility');
+      if (selectedQuestionTypes.includes('region') && person.region) availableTypes.push('region');
       
-      // 利用可能なタイプがない場合はスキップ（フィルタリング済みなので通常は発生しない）
+      // 利用可能なタイプからランダムに選択
       const type = availableTypes.length > 0 
         ? availableTypes[Math.floor(Math.random() * availableTypes.length)]
-        : 'photo'; // フォールバック
+        : 'region'; // フォールバック
 
       // 選択肢を生成（正解 + 3つの不正解）
       const otherPeople = validPeople.filter(p => p.id !== person.id);
@@ -61,7 +80,7 @@ export default function Quiz() {
 
       return { person, type, options };
     });
-  }, [validPeople, questionCount, quizState]);
+  }, [validPeople, questionCount, quizState, selectedQuestionTypes]);
 
   const currentQuestion = questions[currentQuestionIndex];
 
@@ -107,6 +126,17 @@ export default function Quiz() {
     setShowResult(false);
   };
 
+  const toggleQuestionType = (type: QuestionType) => {
+    if (selectedQuestionTypes.includes(type)) {
+      // 少なくとも1つは選択されている必要がある
+      if (selectedQuestionTypes.length > 1) {
+        setSelectedQuestionTypes(selectedQuestionTypes.filter(t => t !== type));
+      }
+    } else {
+      setSelectedQuestionTypes([...selectedQuestionTypes, type]);
+    }
+  };
+
   const getQuestionText = () => {
     if (!currentQuestion) return '';
     
@@ -117,6 +147,8 @@ export default function Quiz() {
         return `「${currentQuestion.person.graduationUniversity}」出身の人物は誰ですか？`;
       case 'facility':
         return `「${currentQuestion.person.facilityName}」に所属している人物は誰ですか？`;
+      case 'region':
+        return `「${currentQuestion.person.region}」の人物は誰ですか？`;
       default:
         return '';
     }
@@ -165,38 +197,111 @@ export default function Quiz() {
               写真や大学名から教授を当てるクイズです
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm text-muted-foreground">
-              問題数を選択してください
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <div className="text-sm font-medium">
+                問題タイプを選択してください
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="type-region"
+                    checked={selectedQuestionTypes.includes('region')}
+                    disabled={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('region')}
+                    onCheckedChange={() => toggleQuestionType('region')}
+                    data-testid="checkbox-type-region"
+                  />
+                  <Label 
+                    htmlFor="type-region" 
+                    className={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('region') ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                  >
+                    地域
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="type-photo"
+                    checked={selectedQuestionTypes.includes('photo')}
+                    disabled={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('photo')}
+                    onCheckedChange={() => toggleQuestionType('photo')}
+                    data-testid="checkbox-type-photo"
+                  />
+                  <Label 
+                    htmlFor="type-photo" 
+                    className={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('photo') ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                  >
+                    写真（写真があるもののみ）
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="type-university"
+                    checked={selectedQuestionTypes.includes('university')}
+                    disabled={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('university')}
+                    onCheckedChange={() => toggleQuestionType('university')}
+                    data-testid="checkbox-type-university"
+                  />
+                  <Label 
+                    htmlFor="type-university" 
+                    className={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('university') ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                  >
+                    大学名
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="type-facility"
+                    checked={selectedQuestionTypes.includes('facility')}
+                    disabled={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('facility')}
+                    onCheckedChange={() => toggleQuestionType('facility')}
+                    data-testid="checkbox-type-facility"
+                  />
+                  <Label 
+                    htmlFor="type-facility" 
+                    className={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('facility') ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                  >
+                    施設名
+                  </Label>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => handleStart(1)}
-                className="h-20 text-lg"
-                data-testid="button-start-1"
-              >
-                1問
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => handleStart(5)}
-                className="h-20 text-lg"
-                data-testid="button-start-5"
-              >
-                5問
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => handleStart(10)}
-                className="h-20 text-lg"
-                data-testid="button-start-10"
-              >
-                10問
-              </Button>
+
+            <div className="space-y-3">
+              <div className="text-sm font-medium">
+                問題数を選択してください
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => handleStart(1)}
+                  className="h-20 text-lg"
+                  disabled={selectedQuestionTypes.length === 0 || validPeople.length < 4}
+                  data-testid="button-start-1"
+                >
+                  1問
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => handleStart(5)}
+                  className="h-20 text-lg"
+                  disabled={selectedQuestionTypes.length === 0 || validPeople.length < 4}
+                  data-testid="button-start-5"
+                >
+                  5問
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => handleStart(10)}
+                  className="h-20 text-lg"
+                  disabled={selectedQuestionTypes.length === 0 || validPeople.length < 4}
+                  data-testid="button-start-10"
+                >
+                  10問
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -257,16 +362,20 @@ export default function Quiz() {
                     } else if (currentQuestion.type === 'university') {
                       // 大学名の問題では大学名を隠す（施設と役職は表示）
                       return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
+                    } else if (currentQuestion.type === 'region') {
+                      // 地域の問題では地域を隠す（施設と役職は表示）
+                      return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
                     } else {
                       // 写真問題では施設と役職を表示
                       return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
                     }
                   } else {
-                    // 回答後は全て表示（大学名、施設名、役職）
+                    // 回答後は全て表示（大学名、施設名、役職、地域）
                     const parts = [
                       option.graduationUniversity,
                       option.facilityName,
                       option.position,
+                      option.region,
                     ].filter(Boolean);
                     return parts.join(' ・ ');
                   }
