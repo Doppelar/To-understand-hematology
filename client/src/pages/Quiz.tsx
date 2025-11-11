@@ -33,15 +33,32 @@ export default function Quiz() {
     'university',
     'facility',
   ]);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([
+    '北海道',
+    '東北',
+    '関東',
+    '中部',
+    '関西',
+    '中国',
+    '四国',
+    '九州',
+  ]);
   const [actualQuestionCount, setActualQuestionCount] = useState<number>(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
 
-  // フィルタリング：選択された問題タイプに基づいてデータを絞り込む
+  // フィルタリング：選択された問題タイプと地域に基づいてデータを絞り込む
   const validPeople = useMemo(() => {
     return people.filter(p => {
+      // 地域フィルター：選択された地域に含まれるか、または地域が未設定の場合は全て含める
+      const matchesRegion = selectedRegions.length === 0 || 
+                            !p.region || 
+                            selectedRegions.includes(p.region);
+      
+      if (!matchesRegion) return false;
+      
       // 選択された問題タイプのいずれかで有効なデータがあればOK
       const hasPhoto = selectedQuestionTypes.includes('photo') && p.photoUrl;
       const hasUniversity = selectedQuestionTypes.includes('university') && p.graduationUniversity;
@@ -50,7 +67,7 @@ export default function Quiz() {
       
       return hasPhoto || hasUniversity || hasFacility || hasRegion;
     });
-  }, [people, selectedQuestionTypes]);
+  }, [people, selectedQuestionTypes, selectedRegions]);
 
   // クイズ問題を生成（quizStateが'quiz'の時だけ生成）
   const questions = useMemo<QuizQuestion[]>(() => {
@@ -137,6 +154,17 @@ export default function Quiz() {
     }
   };
 
+  const toggleRegion = (region: string) => {
+    if (selectedRegions.includes(region)) {
+      // 少なくとも1つは選択されている必要がある
+      if (selectedRegions.length > 1) {
+        setSelectedRegions(selectedRegions.filter(r => r !== region));
+      }
+    } else {
+      setSelectedRegions([...selectedRegions, region]);
+    }
+  };
+
   const getQuestionText = () => {
     if (!currentQuestion) return '';
     
@@ -198,6 +226,31 @@ export default function Quiz() {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <div className="text-sm font-medium">
+                対象地域を選択してください
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州'].map((region) => (
+                  <div key={region} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`region-${region}`}
+                      checked={selectedRegions.includes(region)}
+                      disabled={selectedRegions.length === 1 && selectedRegions.includes(region)}
+                      onCheckedChange={() => toggleRegion(region)}
+                      data-testid={`checkbox-region-${region}`}
+                    />
+                    <Label 
+                      htmlFor={`region-${region}`} 
+                      className={selectedRegions.length === 1 && selectedRegions.includes(region) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer text-sm'}
+                    >
+                      {region}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-3">
               <div className="text-sm font-medium">
                 問題タイプを選択してください

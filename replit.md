@@ -227,3 +227,26 @@ Preferred communication style: Simple, everyday language.
   - Specialty data still displayed in table column
   - Filtering now uses only search input and region badges
   - E2E tested: verified region filtering works correctly without specialty filters
+
+## 2025-11-11: Quiz Enhancements
+- **Quiz Question Type Selection**:
+  - Added ability to select which question types to include in quiz
+  - Four question types available: 地域 (region), 写真 (photo), 大学名 (university), 施設名 (facility)
+  - Checkbox UI for each question type with at least one type required
+  - Last remaining checkbox becomes disabled to prevent empty selection
+  - Photo type only includes people with `photoUrl` field
+  - Question generation intelligently picks from selected types based on available data
+  - Selection persists when returning from results to setup screen
+  - E2E tested: verified single-type quiz (photo-only) displays correct question format
+- **Quiz Region Filter**:
+  - Added region-based filtering to limit quiz pool to specific geographic areas
+  - Eight regions available: 北海道, 東北, 関東, 中部, 関西, 中国, 四国, 九州
+  - Displayed in 4-column grid layout above question type selection
+  - All regions selected by default
+  - At least one region must remain selected
+  - Disabled state with visual feedback (opacity-50, cursor-not-allowed) for last region
+  - Filters `validPeople` before question generation
+  - People without region field are included in all region selections
+  - Region selection persists across quiz sessions
+  - Works independently from question type filtering (both filters applied in sequence)
+  - E2E tested: verified multi-region selection, last-region disable behavior, and persistence
