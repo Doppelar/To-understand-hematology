@@ -79,6 +79,13 @@ export default function Quiz() {
       
       if (!matchesRegion) return false;
       
+      // 役職フィルター：選択された役職に含まれるか、または役職が未設定の場合は全て含める
+      const matchesPosition = selectedPositions.length === 0 || 
+                              !p.position || 
+                              selectedPositions.includes(p.position);
+      
+      if (!matchesPosition) return false;
+      
       // 選択された問題タイプのいずれかで有効なデータがあればOK
       const hasPhoto = selectedQuestionTypes.includes('photo') && p.photoUrl;
       const hasUniversity = selectedQuestionTypes.includes('university') && p.graduationUniversity;
@@ -86,7 +93,7 @@ export default function Quiz() {
       
       return hasPhoto || hasUniversity || hasFacility;
     });
-  }, [people, selectedQuestionTypes, selectedRegions]);
+  }, [people, selectedQuestionTypes, selectedRegions, selectedPositions]);
 
   // クイズ問題を生成（quizStateが'quiz'の時だけ生成）
   const questions = useMemo<QuizQuestion[]>(() => {
@@ -183,6 +190,17 @@ export default function Quiz() {
     }
   };
 
+  const togglePosition = (position: string) => {
+    if (selectedPositions.includes(position)) {
+      // 少なくとも1つは選択されている必要がある
+      if (selectedPositions.length > 1) {
+        setSelectedPositions(selectedPositions.filter(p => p !== position));
+      }
+    } else {
+      setSelectedPositions([...selectedPositions, position]);
+    }
+  };
+
   const getQuestionText = () => {
     if (!currentQuestion) return '';
     
@@ -238,7 +256,7 @@ export default function Quiz() {
               <h1 className="text-3xl font-bold" data-testid="heading-quiz">血液内科クイズ</h1>
             </div>
             <p className="text-muted-foreground mt-2">
-              写真や大学名から教授を当てるクイズです
+              写真や大学名から血液内科医を当てるクイズです
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -261,6 +279,31 @@ export default function Quiz() {
                       className={selectedRegions.length === 1 && selectedRegions.includes(region) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer text-sm'}
                     >
                       {region}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-medium">
+                対象役職を選択してください
+              </div>
+              <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                {availablePositions.map((position) => (
+                  <div key={position} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`position-${position}`}
+                      checked={selectedPositions.includes(position)}
+                      disabled={selectedPositions.length === 1 && selectedPositions.includes(position)}
+                      onCheckedChange={() => togglePosition(position)}
+                      data-testid={`checkbox-position-${position}`}
+                    />
+                    <Label 
+                      htmlFor={`position-${position}`} 
+                      className={selectedPositions.length === 1 && selectedPositions.includes(position) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer text-sm'}
+                    >
+                      {position}
                     </Label>
                   </div>
                 ))}
