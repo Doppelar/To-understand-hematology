@@ -9,7 +9,7 @@ import EdgeLabelDialog from '@/components/EdgeLabelDialog';
 import FilterBar from '@/components/FilterBar';
 import { CustomNodeData } from '@/components/CustomNode';
 import { Button } from '@/components/ui/button';
-import { Network } from 'lucide-react';
+import { Network, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import {
@@ -18,6 +18,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { Node as DBNode, Edge as DBEdge } from '@shared/schema';
 
 const STORAGE_KEYS = {
@@ -26,10 +35,24 @@ const STORAGE_KEYS = {
   ACTIVE_REGIONS: 'influencerMap.activeRegions',
   SIDEBAR_VISIBLE: 'influencerMap.sidebarVisible',
   SHOW_LABELS: 'influencerMap.showLabels',
+  AUTHENTICATED: 'influencerMap.authenticated',
 };
+
+const CORRECT_PASSWORD = 'gemab';
 
 export default function Home() {
   const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEYS.AUTHENTICATED);
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+  
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_NODE_IDS);
@@ -366,6 +389,69 @@ export default function Home() {
       description: 'すべての変更が保存されました',
     });
   }, [toast]);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === CORRECT_PASSWORD) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem(STORAGE_KEYS.AUTHENTICATED, 'true');
+      setPasswordError(false);
+      toast({
+        title: '認証成功',
+        description: 'インフルエンサーマップにアクセスできます',
+      });
+    } else {
+      setPasswordError(true);
+      setPasswordInput('');
+      toast({
+        variant: 'destructive',
+        title: 'パスワードが正しくありません',
+        description: '正しいパスワードを入力してください',
+      });
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="h-full flex items-center justify-center bg-background p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <div className="flex items-center gap-3 justify-center">
+              <Lock className="w-8 h-8 text-primary" />
+              <CardTitle className="text-2xl">インフルエンサーマップ</CardTitle>
+            </div>
+            <CardDescription className="text-center">
+              このページは保護されています。パスワードを入力してください。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">パスワード</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="パスワードを入力"
+                  className={passwordError ? 'border-destructive' : ''}
+                  data-testid="input-password"
+                  autoFocus
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                data-testid="button-submit-password"
+              >
+                アクセス
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <ReactFlowProvider>

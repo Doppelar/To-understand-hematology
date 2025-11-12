@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Brain, Trophy, RotateCcw, ArrowRight } from 'lucide-react';
 import type { Node } from '@shared/schema';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type QuestionType = 'photo' | 'university' | 'facility' | 'region';
+type QuestionType = 'photo' | 'university' | 'facility';
 
 type QuizQuestion = {
   person: Node;
@@ -28,7 +28,6 @@ export default function Quiz() {
   const [quizState, setQuizState] = useState<QuizState>('setup');
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [selectedQuestionTypes, setSelectedQuestionTypes] = useState<QuestionType[]>([
-    'region',
     'photo',
     'university',
     'facility',
@@ -49,7 +48,28 @@ export default function Quiz() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
 
-  // フィルタリング：選択された問題タイプと地域に基づいてデータを絞り込む
+  // 実際に存在する役職のリストを取得
+  const availablePositions = useMemo(() => {
+    const positions = new Set<string>();
+    people.forEach(p => {
+      if (p.position) {
+        positions.add(p.position);
+      }
+    });
+    return Array.from(positions).sort((a, b) => a.localeCompare(b, 'ja'));
+  }, [people]);
+
+  // 役職の選択状態（デフォルトは全て選択）
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
+
+  // availablePositionsが変わったときにselectedPositionsを初期化
+  useEffect(() => {
+    if (availablePositions.length > 0 && selectedPositions.length === 0) {
+      setSelectedPositions(availablePositions);
+    }
+  }, [availablePositions, selectedPositions.length]);
+
+  // フィルタリング：選択された問題タイプ、地域、役職に基づいてデータを絞り込む
   const validPeople = useMemo(() => {
     return people.filter(p => {
       // 地域フィルター：選択された地域に含まれるか、または地域が未設定の場合は全て含める
@@ -63,9 +83,8 @@ export default function Quiz() {
       const hasPhoto = selectedQuestionTypes.includes('photo') && p.photoUrl;
       const hasUniversity = selectedQuestionTypes.includes('university') && p.graduationUniversity;
       const hasFacility = selectedQuestionTypes.includes('facility') && p.facilityName;
-      const hasRegion = selectedQuestionTypes.includes('region') && p.region;
       
-      return hasPhoto || hasUniversity || hasFacility || hasRegion;
+      return hasPhoto || hasUniversity || hasFacility;
     });
   }, [people, selectedQuestionTypes, selectedRegions]);
 
@@ -82,12 +101,11 @@ export default function Quiz() {
       if (selectedQuestionTypes.includes('photo') && person.photoUrl) availableTypes.push('photo');
       if (selectedQuestionTypes.includes('university') && person.graduationUniversity) availableTypes.push('university');
       if (selectedQuestionTypes.includes('facility') && person.facilityName) availableTypes.push('facility');
-      if (selectedQuestionTypes.includes('region') && person.region) availableTypes.push('region');
       
       // 利用可能なタイプからランダムに選択
       const type = availableTypes.length > 0 
         ? availableTypes[Math.floor(Math.random() * availableTypes.length)]
-        : 'region'; // フォールバック
+        : 'photo'; // フォールバック
 
       // 選択肢を生成（正解 + 3つの不正解）
       const otherPeople = validPeople.filter(p => p.id !== person.id);
@@ -175,8 +193,6 @@ export default function Quiz() {
         return `「${currentQuestion.person.graduationUniversity}」出身の人物は誰ですか？`;
       case 'facility':
         return `「${currentQuestion.person.facilityName}」に所属している人物は誰ですか？`;
-      case 'region':
-        return `「${currentQuestion.person.region}」の人物は誰ですか？`;
       default:
         return '';
     }
@@ -256,21 +272,6 @@ export default function Quiz() {
                 問題タイプを選択してください
               </div>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="type-region"
-                    checked={selectedQuestionTypes.includes('region')}
-                    disabled={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('region')}
-                    onCheckedChange={() => toggleQuestionType('region')}
-                    data-testid="checkbox-type-region"
-                  />
-                  <Label 
-                    htmlFor="type-region" 
-                    className={selectedQuestionTypes.length === 1 && selectedQuestionTypes.includes('region') ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-                  >
-                    地域
-                  </Label>
-                </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="type-photo"
@@ -414,9 +415,6 @@ export default function Quiz() {
                       return option.position || '';
                     } else if (currentQuestion.type === 'university') {
                       // 大学名の問題では大学名を隠す（施設と役職は表示）
-                      return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
-                    } else if (currentQuestion.type === 'region') {
-                      // 地域の問題では地域を隠す（施設と役職は表示）
                       return `${option.facilityName || ''} ${option.position ? `・${option.position}` : ''}`.trim();
                     } else {
                       // 写真問題では施設と役職を表示
