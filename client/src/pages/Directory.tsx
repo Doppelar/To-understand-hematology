@@ -56,7 +56,7 @@ export default function Directory() {
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [, setLocation] = useLocation();
 
-  const regions = Array.from(new Set(people.map(p => p.region).filter(Boolean)));
+  const regions = ['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州'];
 
   const filteredPeople = useMemo(() => {
     const filtered = people.filter(person => {
@@ -374,6 +374,7 @@ export default function Directory() {
                 ))}
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <Table>
               <TableHeader>
                 <TableRow>
@@ -459,6 +460,7 @@ export default function Directory() {
                 ))}
               </TableBody>
             </Table>
+              </div>
             )}
           </CardContent>
         </Card>
