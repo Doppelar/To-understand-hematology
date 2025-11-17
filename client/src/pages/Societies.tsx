@@ -29,6 +29,7 @@ import { Calendar, MapPin, User, Plus, Edit, Trash2, Loader2 } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import ConferenceForm from '@/components/ConferenceForm';
 import OfficialForm from '@/components/OfficialForm';
+import SocietyForm from '@/components/SocietyForm';
 
 type Conference = {
   id: string;
@@ -63,6 +64,9 @@ type Society = {
 export default function Societies() {
   const { toast } = useToast();
   const [selectedSociety, setSelectedSociety] = useState('');
+  const [addSocietyDialogOpen, setAddSocietyDialogOpen] = useState(false);
+  const [editingSociety, setEditingSociety] = useState<Society | null>(null);
+  const [deletingSociety, setDeletingSociety] = useState<{ id: string; name: string } | null>(null);
   const [addConferenceDialogOpen, setAddConferenceDialogOpen] = useState(false);
   const [editingConference, setEditingConference] = useState<Conference & { societyId: string } | null>(null);
   const [deletingConference, setDeletingConference] = useState<{ id: string; societyId: string } | null>(null);
@@ -238,6 +242,79 @@ export default function Societies() {
     },
   });
 
+  // Add society mutation
+  const addSocietyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('POST', '/api/societies', {
+        name: data.name,
+        shortName: data.shortName,
+        description: data.description || null,
+      });
+    },
+    onSuccess: (newSociety: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setAddSocietyDialogOpen(false);
+      setSelectedSociety(newSociety.id);
+      toast({
+        title: '学会を追加しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '学会の追加に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Edit society mutation
+  const editSocietyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('PATCH', `/api/societies/${data.id}`, {
+        name: data.name,
+        shortName: data.shortName,
+        description: data.description || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setEditingSociety(null);
+      toast({
+        title: '学会を更新しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '学会の更新に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete society mutation
+  const deleteSocietyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/societies/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+      setDeletingSociety(null);
+      setSelectedSociety('');
+      toast({
+        title: '学会を削除しました',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'エラーが発生しました',
+        description: '学会の削除に失敗しました',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleAddConference = (data: any) => {
     addConferenceMutation.mutate(data);
   };
@@ -262,6 +339,19 @@ export default function Societies() {
   const handleDeleteOfficial = () => {
     if (!deletingOfficial) return;
     deleteOfficialMutation.mutate(deletingOfficial.id);
+  };
+
+  const handleAddSociety = (data: any) => {
+    addSocietyMutation.mutate(data);
+  };
+
+  const handleEditSociety = (data: any) => {
+    editSocietyMutation.mutate(data);
+  };
+
+  const handleDeleteSociety = () => {
+    if (!deletingSociety) return;
+    deleteSocietyMutation.mutate(deletingSociety.id);
   };
 
   if (error) {
@@ -300,10 +390,18 @@ export default function Societies() {
   return (
     <div className="h-full flex flex-col bg-background">
       <header className="border-b p-4">
-        <h1 className="text-2xl font-bold text-foreground" data-testid="heading-societies">学会</h1>
-        <p className="text-sm text-muted-foreground mt-1" data-testid="text-societies-description">
-          血液内科関連の主要学会の情報
-        </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground" data-testid="heading-societies">学会</h1>
+            <p className="text-sm text-muted-foreground mt-1" data-testid="text-societies-description">
+              血液内科関連の主要学会の情報
+            </p>
+          </div>
+          <Button onClick={() => setAddSocietyDialogOpen(true)} data-testid="button-add-society">
+            <Plus className="w-4 h-4 mr-2" />
+            学会を追加
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-auto p-4">
@@ -323,9 +421,29 @@ export default function Societies() {
           {societies.map(society => (
             <TabsContent key={society.id} value={society.id} className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle data-testid={`text-society-name-${society.shortName}`}>{society.name}</CardTitle>
-                  <CardDescription data-testid={`text-society-description-${society.shortName}`}>{society.description}</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+                  <div className="flex-1">
+                    <CardTitle data-testid={`text-society-name-${society.shortName}`}>{society.name}</CardTitle>
+                    <CardDescription data-testid={`text-society-description-${society.shortName}`}>{society.description}</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setEditingSociety(society)}
+                      data-testid={`button-edit-society-${society.shortName}`}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setDeletingSociety({ id: society.id, name: society.name })}
+                      data-testid={`button-delete-society-${society.shortName}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
               </Card>
 
@@ -588,6 +706,60 @@ export default function Societies() {
             <AlertDialogAction
               onClick={handleDeleteOfficial}
               data-testid="button-confirm-delete-official"
+            >
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={addSocietyDialogOpen} onOpenChange={setAddSocietyDialogOpen}>
+        <DialogContent className="max-w-2xl" aria-describedby="add-society-description">
+          <DialogHeader>
+            <DialogTitle>学会を追加</DialogTitle>
+            <p id="add-society-description" className="sr-only">新しい学会を追加するフォーム</p>
+          </DialogHeader>
+          <SocietyForm
+            onSubmit={handleAddSociety}
+            onCancel={() => setAddSocietyDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingSociety} onOpenChange={(open) => !open && setEditingSociety(null)}>
+        <DialogContent className="max-w-2xl" aria-describedby="edit-society-description">
+          <DialogHeader>
+            <DialogTitle>学会を編集</DialogTitle>
+            <p id="edit-society-description" className="sr-only">既存の学会を編集するフォーム</p>
+          </DialogHeader>
+          {editingSociety && (
+            <SocietyForm
+              initialData={{
+                id: editingSociety.id,
+                name: editingSociety.name,
+                shortName: editingSociety.shortName,
+                description: editingSociety.description || '',
+              }}
+              onSubmit={handleEditSociety}
+              onCancel={() => setEditingSociety(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deletingSociety} onOpenChange={(open) => !open && setDeletingSociety(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>削除の確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              学会「{deletingSociety?.name}」を削除してもよろしいですか？この学会に関連する学術集会や役員も全て削除されます。この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-society">キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSociety}
+              data-testid="button-confirm-delete-society"
             >
               削除
             </AlertDialogAction>
