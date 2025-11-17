@@ -251,8 +251,8 @@ export default function Societies() {
         description: data.description || null,
       });
     },
-    onSuccess: (newSociety: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+    onSuccess: async (newSociety: any) => {
+      await queryClient.refetchQueries({ queryKey: ['/api/societies-with-relations'] });
       setAddSocietyDialogOpen(false);
       setSelectedSociety(newSociety.id);
       toast({
@@ -277,8 +277,8 @@ export default function Societies() {
         description: data.description || null,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['/api/societies-with-relations'] });
       setEditingSociety(null);
       toast({
         title: '学会を更新しました',
@@ -298,8 +298,8 @@ export default function Societies() {
     mutationFn: async (id: string) => {
       return await apiRequest('DELETE', `/api/societies/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/societies-with-relations'] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['/api/societies-with-relations'] });
       setDeletingSociety(null);
       setSelectedSociety('');
       toast({
@@ -722,6 +722,7 @@ export default function Societies() {
           <SocietyForm
             onSubmit={handleAddSociety}
             onCancel={() => setAddSocietyDialogOpen(false)}
+            isPending={addSocietyMutation.isPending}
           />
         </DialogContent>
       </Dialog>
@@ -742,6 +743,7 @@ export default function Societies() {
               }}
               onSubmit={handleEditSociety}
               onCancel={() => setEditingSociety(null)}
+              isPending={editSocietyMutation.isPending}
             />
           )}
         </DialogContent>
@@ -756,12 +758,15 @@ export default function Societies() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-society">キャンセル</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteSocietyMutation.isPending} data-testid="button-cancel-delete-society">
+              キャンセル
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteSociety}
+              disabled={deleteSocietyMutation.isPending}
               data-testid="button-confirm-delete-society"
             >
-              削除
+              {deleteSocietyMutation.isPending ? '削除中...' : '削除'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

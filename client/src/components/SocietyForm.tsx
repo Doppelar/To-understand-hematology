@@ -18,9 +18,10 @@ type SocietyFormProps = {
   initialData?: FormData & { id?: string };
   onSubmit: (data: FormData & { id?: string }) => void;
   onCancel?: () => void;
+  isPending?: boolean;
 };
 
-export default function SocietyForm({ initialData, onSubmit, onCancel }: SocietyFormProps) {
+export default function SocietyForm({ initialData, onSubmit, onCancel, isPending }: SocietyFormProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -80,12 +81,12 @@ export default function SocietyForm({ initialData, onSubmit, onCancel }: Society
 
       <div className="flex justify-end gap-2">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel-society">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isPending} data-testid="button-cancel-society">
             キャンセル
           </Button>
         )}
-        <Button type="submit" data-testid="button-submit-society">
-          {initialData?.id ? '更新' : '追加'}
+        <Button type="submit" disabled={isPending} data-testid="button-submit-society">
+          {isPending ? '処理中...' : initialData?.id ? '更新' : '追加'}
         </Button>
       </div>
     </form>
