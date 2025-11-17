@@ -24,9 +24,9 @@ PostgreSQL is the primary database, managed via Neon serverless. Drizzle ORM def
 
 Key features include:
 - **Influencer Map**: Interactive network graph with professional relationships, draggable nodes, and filtering.
-- **Directory**: Searchable list of professionals with detailed profiles, including sortable columns and Excel export.
-- **Societies**: Information on medical societies, conferences (with sorting and highlighting), and officials, with full CRUD operations.
-- **Quiz Feature**: Educational quiz for identifying professionals based on photos, university, or facility, with filters for region and position.
+- **Directory**: Searchable list of professionals with detailed profiles, including sortable columns, Excel export, and standardized 8-region filtering (北海道, 東北, 関東, 中部, 関西, 中国, 四国, 九州).
+- **Societies**: Full CRUD operations for medical societies (users can add international societies like ASH, EHA beyond default Japanese societies JSH/JSHCT/JSMO), conferences with year-based sorting and highlighting, and society officials. Uses refetchQueries for consistent cache management and prevents duplicate submissions with isPending states. Includes SocietyForm component for add/edit operations.
+- **Quiz Feature**: Educational quiz for identifying professionals based on photos, university, or facility, with filters for region and position using the standardized 8-region list.
 - **Security**: Password protection for the Influencer Map page.
 
 # External Dependencies
