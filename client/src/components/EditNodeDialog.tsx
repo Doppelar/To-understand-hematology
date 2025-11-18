@@ -207,34 +207,23 @@ export default function EditNodeDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-facilityName">施設名（大学）</Label>
-            {selectedRegion && availableUniversities.length > 0 ? (
-              <Select
-                onValueChange={(value) => form.setValue('facilityName', value)}
-                value={form.watch('facilityName')}
-              >
-                <SelectTrigger data-testid="select-edit-facility">
-                  <SelectValue placeholder="大学を選択" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {availableUniversities.map((university) => (
-                    <SelectItem key={university} value={university}>
-                      {university}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                id="edit-facilityName"
-                {...form.register('facilityName')}
-                placeholder="先に地域を選択してください"
-                disabled={!selectedRegion}
-                data-testid="input-edit-facility"
-              />
+            <Label htmlFor="edit-facilityName">施設名</Label>
+            <Input
+              id="edit-facilityName"
+              {...form.register('facilityName')}
+              placeholder="例: 東京大学、がん研有明病院、国立がん研究センターなど"
+              list="edit-facility-suggestions"
+              data-testid="input-edit-facility"
+            />
+            {selectedRegion && availableUniversities.length > 0 && (
+              <datalist id="edit-facility-suggestions">
+                {availableUniversities.map((university) => (
+                  <option key={university} value={university} />
+                ))}
+              </datalist>
             )}
             <p className="text-xs text-muted-foreground">
-              地域を選択すると、医学部のある大学を選べます
+              大学、病院、クリニック、研究所など、任意の施設名を入力できます。地域を選択すると大学の候補が表示されます。
             </p>
           </div>
 
