@@ -29,6 +29,8 @@ const formSchema = z.object({
   graduationYear: z.string().optional(),
   appointmentDate: z.string().optional(),
   retirementDate: z.string().optional(),
+  dlbclTreatment: z.string().optional(),
+  flTreatment: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,6 +55,8 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
       graduationYear: '',
       appointmentDate: '',
       retirementDate: '',
+      dlbclTreatment: '',
+      flTreatment: '',
     },
   });
 
@@ -280,6 +284,28 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
           placeholder="経歴や関係性について記入してください"
           className="resize-none h-24"
           data-testid="textarea-career"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="dlbclTreatment">治療方針 DLBCL</Label>
+        <Textarea
+          id="dlbclTreatment"
+          {...form.register('dlbclTreatment')}
+          placeholder="DLBCL（びまん性大細胞型B細胞リンパ腫）の治療方針について記入してください"
+          className="resize-none h-24"
+          data-testid="textarea-dlbcl-treatment"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="flTreatment">治療方針 FL</Label>
+        <Textarea
+          id="flTreatment"
+          {...form.register('flTreatment')}
+          placeholder="FL（濾胞性リンパ腫）の治療方針について記入してください"
+          className="resize-none h-24"
+          data-testid="textarea-fl-treatment"
         />
       </div>
 

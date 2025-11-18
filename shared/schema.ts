@@ -16,6 +16,8 @@ export const nodes = pgTable("nodes", {
   graduationYear: text("graduation_year"),
   appointmentDate: text("appointment_date"),
   retirementDate: text("retirement_date"),
+  dlbclTreatment: text("dlbcl_treatment"),
+  flTreatment: text("fl_treatment"),
   positionX: text("position_x").notNull().default("0"),
   positionY: text("position_y").notNull().default("0"),
 });

@@ -36,6 +36,8 @@ const formSchema = z.object({
   graduationYear: z.string().optional(),
   appointmentDate: z.string().optional(),
   retirementDate: z.string().optional(),
+  dlbclTreatment: z.string().optional(),
+  flTreatment: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -75,6 +77,8 @@ export default function EditNodeDialog({
       graduationYear: '',
       appointmentDate: '',
       retirementDate: '',
+      dlbclTreatment: '',
+      flTreatment: '',
     },
   });
 
@@ -91,6 +95,8 @@ export default function EditNodeDialog({
         graduationYear: (node as any).graduationYear || '',
         appointmentDate: (node as any).appointmentDate || '',
         retirementDate: (node as any).retirementDate || '',
+        dlbclTreatment: (node as any).dlbclTreatment || '',
+        flTreatment: (node as any).flTreatment || '',
       });
       setPhotoPreview(node.photoUrl);
     }
@@ -335,6 +341,28 @@ export default function EditNodeDialog({
               placeholder="経歴や関係性について記入してください"
               className="resize-none h-24"
               data-testid="textarea-edit-career"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-dlbclTreatment">治療方針 DLBCL</Label>
+            <Textarea
+              id="edit-dlbclTreatment"
+              {...form.register('dlbclTreatment')}
+              placeholder="DLBCL（びまん性大細胞型B細胞リンパ腫）の治療方針について記入してください"
+              className="resize-none h-24"
+              data-testid="textarea-edit-dlbcl-treatment"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-flTreatment">治療方針 FL</Label>
+            <Textarea
+              id="edit-flTreatment"
+              {...form.register('flTreatment')}
+              placeholder="FL（濾胞性リンパ腫）の治療方針について記入してください"
+              className="resize-none h-24"
+              data-testid="textarea-edit-fl-treatment"
             />
           </div>
 

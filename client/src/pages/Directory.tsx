@@ -490,6 +490,8 @@ export default function Directory() {
           graduationYear: editingPerson.graduationYear || undefined,
           appointmentDate: editingPerson.appointmentDate || undefined,
           retirementDate: editingPerson.retirementDate || undefined,
+          dlbclTreatment: editingPerson.dlbclTreatment || undefined,
+          flTreatment: editingPerson.flTreatment || undefined,
         } : null}
         onSave={handleEditPerson}
         onDelete={handleDeletePerson}
