@@ -28,6 +28,7 @@ import { ObjectUploader } from '@/components/ObjectUploader';
 const formSchema = z.object({
   name: z.string().min(1, '氏名を入力してください'),
   facilityName: z.string().optional(),
+  facilityUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
   position: z.string().optional(),
   career: z.string().optional(),
   specialty: z.string().optional(),
@@ -69,6 +70,7 @@ export default function EditNodeDialog({
     defaultValues: {
       name: '',
       facilityName: '',
+      facilityUrl: '',
       position: '',
       career: '',
       specialty: '',
@@ -87,6 +89,7 @@ export default function EditNodeDialog({
       form.reset({
         name: node.name,
         facilityName: node.facilityName || '',
+        facilityUrl: (node as any).facilityUrl || '',
         position: node.position || '',
         career: node.career || '',
         specialty: node.specialty || '',
@@ -224,6 +227,23 @@ export default function EditNodeDialog({
             )}
             <p className="text-xs text-muted-foreground">
               大学、病院、クリニック、研究所など、任意の施設名を入力できます。地域を選択すると大学の候補が表示されます。
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-facilityUrl">施設HP URL</Label>
+            <Input
+              id="edit-facilityUrl"
+              {...form.register('facilityUrl')}
+              placeholder="例: https://www.hospital.ac.jp/"
+              type="url"
+              data-testid="input-edit-facility-url"
+            />
+            {form.formState.errors.facilityUrl && (
+              <p className="text-sm text-destructive">{form.formState.errors.facilityUrl.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              施設のホームページURLを入力すると、名鑑からリンクできます
             </p>
           </div>
 

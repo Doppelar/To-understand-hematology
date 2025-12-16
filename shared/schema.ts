@@ -7,6 +7,7 @@ export const nodes = pgTable("nodes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   facilityName: text("facility_name"),
+  facilityUrl: text("facility_url"),
   position: text("position"),
   career: text("career"),
   specialty: text("specialty"),
