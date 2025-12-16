@@ -43,9 +43,22 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-type NodeData = FormData & {
+type NodeData = {
   id: string;
+  name: string;
+  facilityName?: string;
+  facilityUrl?: string;
+  position?: string;
+  career?: string;
+  specialty?: string;
+  region?: string;
   photoUrl?: string;
+  graduationUniversity?: string;
+  graduationYear?: string;
+  appointmentDate?: string;
+  retirementDate?: string;
+  dlbclTreatment?: string;
+  flTreatment?: string;
 };
 
 type EditNodeDialogProps = {
@@ -88,18 +101,18 @@ export default function EditNodeDialog({
     if (node) {
       form.reset({
         name: node.name,
-        facilityName: node.facilityName || '',
-        facilityUrl: (node as any).facilityUrl || '',
-        position: node.position || '',
-        career: node.career || '',
-        specialty: node.specialty || '',
-        region: node.region || '',
-        graduationUniversity: (node as any).graduationUniversity || '',
-        graduationYear: (node as any).graduationYear || '',
-        appointmentDate: (node as any).appointmentDate || '',
-        retirementDate: (node as any).retirementDate || '',
-        dlbclTreatment: (node as any).dlbclTreatment || '',
-        flTreatment: (node as any).flTreatment || '',
+        facilityName: node.facilityName ?? '',
+        facilityUrl: node.facilityUrl ?? '',
+        position: node.position ?? '',
+        career: node.career ?? '',
+        specialty: node.specialty ?? '',
+        region: node.region ?? '',
+        graduationUniversity: node.graduationUniversity ?? '',
+        graduationYear: node.graduationYear ?? '',
+        appointmentDate: node.appointmentDate ?? '',
+        retirementDate: node.retirementDate ?? '',
+        dlbclTreatment: node.dlbclTreatment ?? '',
+        flTreatment: node.flTreatment ?? '',
       });
       setPhotoPreview(node.photoUrl);
     }
@@ -130,7 +143,13 @@ export default function EditNodeDialog({
 
   const handleSubmit = (data: FormData) => {
     if (node) {
-      onSave({ ...data, id: node.id, photoUrl: photoPreview });
+      const saveData = {
+        ...data,
+        facilityUrl: data.facilityUrl || undefined,
+        id: node.id,
+        photoUrl: photoPreview,
+      };
+      onSave(saveData);
       onOpenChange(false);
     }
   };

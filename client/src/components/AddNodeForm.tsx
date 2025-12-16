@@ -86,7 +86,12 @@ export default function AddNodeForm({ onSubmit }: AddNodeFormProps) {
   };
 
   const handleSubmit = (data: FormData) => {
-    onSubmit({ ...data, photoUrl });
+    const submitData = {
+      ...data,
+      facilityUrl: data.facilityUrl || undefined,
+      photoUrl,
+    };
+    onSubmit(submitData);
     form.reset();
     setPhotoUrl(undefined);
   };

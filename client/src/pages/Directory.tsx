@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, MapPin, Network, Plus, Edit, Trash2, ArrowUpDown, FileSpreadsheet } from 'lucide-react';
+import { Search, MapPin, Network, Plus, Edit, Trash2, ArrowUpDown, FileSpreadsheet, ExternalLink } from 'lucide-react';
 import { useLocation } from 'wouter';
 import AddNodeForm from '@/components/AddNodeForm';
 import EditNodeDialog from '@/components/EditNodeDialog';
@@ -416,7 +416,25 @@ export default function Directory() {
                       </Avatar>
                     </TableCell>
                     <TableCell className="font-medium">{person.name}</TableCell>
-                    <TableCell>{person.facilityName || ''}</TableCell>
+                    <TableCell>
+                      {person.facilityName ? (
+                        person.facilityUrl ? (
+                          <a
+                            href={person.facilityUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline inline-flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`link-facility-${person.id}`}
+                          >
+                            {person.facilityName}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          person.facilityName
+                        )
+                      ) : ''}
+                    </TableCell>
                     <TableCell>{person.position || ''}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{person.graduationUniversity}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{person.graduationYear}</TableCell>
@@ -481,6 +499,7 @@ export default function Directory() {
         node={editingPerson ? {
           ...editingPerson,
           facilityName: editingPerson.facilityName || undefined,
+          facilityUrl: editingPerson.facilityUrl || undefined,
           position: editingPerson.position || undefined,
           career: editingPerson.career || undefined,
           specialty: editingPerson.specialty || undefined,
