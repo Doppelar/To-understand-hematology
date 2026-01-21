@@ -92,3 +92,26 @@ export type InsertConference = z.infer<typeof insertConferenceSchema>;
 export type Conference = typeof conferences.$inferSelect;
 export type InsertSocietyOfficial = z.infer<typeof insertSocietyOfficialSchema>;
 export type SocietyOfficial = typeof societyOfficials.$inferSelect;
+
+// CAR-T Facilities
+export const cartFacilities = pgTable("cart_facilities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  region: text("region").notNull(),
+  address: text("address"),
+  url: text("url"),
+  // 悪性リンパ腫系薬剤
+  axicel: text("axicel").default("false"),
+  tisacel: text("tisacel").default("false"),
+  lisocel: text("lisocel").default("false"),
+  // BCMA標的薬剤
+  abecma: text("abecma").default("false"),
+  carvykti: text("carvykti").default("false"),
+});
+
+export const insertCartFacilitySchema = createInsertSchema(cartFacilities).omit({
+  id: true,
+});
+
+export type InsertCartFacility = z.infer<typeof insertCartFacilitySchema>;
+export type CartFacility = typeof cartFacilities.$inferSelect;

@@ -9,11 +9,14 @@ import {
   type InsertConference,
   type SocietyOfficial,
   type InsertSocietyOfficial,
+  type CartFacility,
+  type InsertCartFacility,
   nodes,
   edges,
   societies,
   conferences,
-  societyOfficials
+  societyOfficials,
+  cartFacilities
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -51,6 +54,12 @@ export interface IStorage {
   createSocietyOfficial(official: InsertSocietyOfficial): Promise<SocietyOfficial>;
   updateSocietyOfficial(id: string, official: Partial<InsertSocietyOfficial>): Promise<SocietyOfficial | undefined>;
   deleteSocietyOfficial(id: string): Promise<boolean>;
+
+  getCartFacility(id: string): Promise<CartFacility | undefined>;
+  getAllCartFacilities(): Promise<CartFacility[]>;
+  createCartFacility(facility: InsertCartFacility): Promise<CartFacility>;
+  updateCartFacility(id: string, facility: Partial<InsertCartFacility>): Promise<CartFacility | undefined>;
+  deleteCartFacility(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -59,6 +68,7 @@ export class MemStorage implements IStorage {
   private societies: Map<string, Society>;
   private conferences: Map<string, Conference>;
   private societyOfficials: Map<string, SocietyOfficial>;
+  private cartFacilitiesMap: Map<string, CartFacility>;
 
   constructor() {
     this.nodes = new Map();
@@ -66,6 +76,7 @@ export class MemStorage implements IStorage {
     this.societies = new Map();
     this.conferences = new Map();
     this.societyOfficials = new Map();
+    this.cartFacilitiesMap = new Map();
   }
 
   async getNode(id: string): Promise<Node | undefined> {
@@ -257,6 +268,44 @@ export class MemStorage implements IStorage {
   async deleteSocietyOfficial(id: string): Promise<boolean> {
     return this.societyOfficials.delete(id);
   }
+
+  async getCartFacility(id: string): Promise<CartFacility | undefined> {
+    return this.cartFacilitiesMap.get(id);
+  }
+
+  async getAllCartFacilities(): Promise<CartFacility[]> {
+    return Array.from(this.cartFacilitiesMap.values());
+  }
+
+  async createCartFacility(insertFacility: InsertCartFacility): Promise<CartFacility> {
+    const id = randomUUID();
+    const facility: CartFacility = {
+      id,
+      name: insertFacility.name,
+      region: insertFacility.region,
+      address: insertFacility.address ?? null,
+      url: insertFacility.url ?? null,
+      axicel: insertFacility.axicel ?? "false",
+      tisacel: insertFacility.tisacel ?? "false",
+      lisocel: insertFacility.lisocel ?? "false",
+      abecma: insertFacility.abecma ?? "false",
+      carvykti: insertFacility.carvykti ?? "false",
+    };
+    this.cartFacilitiesMap.set(id, facility);
+    return facility;
+  }
+
+  async updateCartFacility(id: string, updates: Partial<InsertCartFacility>): Promise<CartFacility | undefined> {
+    const facility = this.cartFacilitiesMap.get(id);
+    if (!facility) return undefined;
+    const updatedFacility = { ...facility, ...updates };
+    this.cartFacilitiesMap.set(id, updatedFacility);
+    return updatedFacility;
+  }
+
+  async deleteCartFacility(id: string): Promise<boolean> {
+    return this.cartFacilitiesMap.delete(id);
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -385,6 +434,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSocietyOfficial(id: string): Promise<boolean> {
     const result = await db.delete(societyOfficials).where(eq(societyOfficials.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getCartFacility(id: string): Promise<CartFacility | undefined> {
+    const [facility] = await db.select().from(cartFacilities).where(eq(cartFacilities.id, id));
+    return facility || undefined;
+  }
+
+  async getAllCartFacilities(): Promise<CartFacility[]> {
+    return await db.select().from(cartFacilities);
+  }
+
+  async createCartFacility(insertFacility: InsertCartFacility): Promise<CartFacility> {
+    const [facility] = await db.insert(cartFacilities).values(insertFacility).returning();
+    return facility;
+  }
+
+  async updateCartFacility(id: string, updates: Partial<InsertCartFacility>): Promise<CartFacility | undefined> {
+    const [facility] = await db.update(cartFacilities).set(updates).where(eq(cartFacilities.id, id)).returning();
+    return facility || undefined;
+  }
+
+  async deleteCartFacility(id: string): Promise<boolean> {
+    const result = await db.delete(cartFacilities).where(eq(cartFacilities.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 }
