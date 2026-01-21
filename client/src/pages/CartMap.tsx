@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -21,6 +23,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Plus, Trash2, ExternalLink, MapPin, Building2 } from 'lucide-react';
 import type { CartFacility } from '@shared/schema';
 
@@ -55,6 +65,22 @@ const REGION_POSITIONS: Record<string, { top: string; left: string }> = {
   '中国': { top: '60%', left: '25%' },
   '四国': { top: '70%', left: '35%' },
   '九州': { top: '75%', left: '15%' },
+};
+
+const DRUG_COLORS: Record<DrugKey, string> = {
+  axicel: 'bg-blue-500',
+  tisacel: 'bg-green-500',
+  lisocel: 'bg-purple-500',
+  abecma: 'bg-orange-500',
+  carvykti: 'bg-red-500',
+};
+
+const DRUG_LABELS: Record<DrugKey, string> = {
+  axicel: 'Axicel',
+  tisacel: 'Tisa-cel',
+  lisocel: 'Liso-cel',
+  abecma: 'アベクマ',
+  carvykti: 'カービクティ',
 };
 
 export default function CartMap() {
@@ -108,16 +134,12 @@ export default function CartMap() {
 
   const getDrugBadges = (facility: CartFacility) => {
     const badges: { key: DrugKey; label: string; color: string }[] = [];
-    if (facility.axicel === 'true')
-      badges.push({ key: 'axicel', label: 'Axicel', color: 'bg-blue-500' });
-    if (facility.tisacel === 'true')
-      badges.push({ key: 'tisacel', label: 'Tisa-cel', color: 'bg-green-500' });
-    if (facility.lisocel === 'true')
-      badges.push({ key: 'lisocel', label: 'Liso-cel', color: 'bg-purple-500' });
-    if (facility.abecma === 'true')
-      badges.push({ key: 'abecma', label: 'アベクマ', color: 'bg-orange-500' });
-    if (facility.carvykti === 'true')
-      badges.push({ key: 'carvykti', label: 'カービクティ', color: 'bg-red-500' });
+    const drugKeys: DrugKey[] = ['axicel', 'tisacel', 'lisocel', 'abecma', 'carvykti'];
+    drugKeys.forEach((key) => {
+      if (facility[key] === 'true') {
+        badges.push({ key, label: DRUG_LABELS[key], color: DRUG_COLORS[key] });
+      }
+    });
     return badges;
   };
 
@@ -125,7 +147,7 @@ export default function CartMap() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="p-4 border-b space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h1 className="text-2xl font-bold">CAR-T施設マップ</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">CAR-T施設マップ</h1>
           <AddFacilityDialog
             open={isAddDialogOpen}
             onOpenChange={setIsAddDialogOpen}
@@ -134,7 +156,7 @@ export default function CartMap() {
 
         <div className="flex flex-wrap gap-4 items-end">
           <div className="space-y-1">
-            <Label>疾患カテゴリ</Label>
+            <span className="text-sm font-medium">疾患カテゴリ</span>
             <Select
               value={selectedCategory}
               onValueChange={(v) => {
@@ -154,7 +176,7 @@ export default function CartMap() {
           </div>
 
           <div className="space-y-1">
-            <Label>薬剤</Label>
+            <span className="text-sm font-medium">薬剤</span>
             <Select value={selectedDrug} onValueChange={(v) => setSelectedDrug(v as DrugKey | 'all')}>
               <SelectTrigger className="w-48" data-testid="select-drug">
                 <SelectValue />
@@ -179,14 +201,14 @@ export default function CartMap() {
             </Select>
           </div>
 
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground" data-testid="text-facility-count">
             表示施設数: {filteredFacilities.length}件
           </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto p-4">
-        <div className="flex gap-4 min-h-[600px]">
+        <div className="flex gap-4 min-h-[600px] flex-wrap">
           <div className="relative w-96 h-[600px] bg-muted/30 rounded-lg border flex-shrink-0">
             <div className="absolute inset-0 p-2">
               {REGIONS.map((region) => {
@@ -194,80 +216,73 @@ export default function CartMap() {
                 const count = facilitiesByRegion[region]?.length || 0;
                 const isSelected = selectedRegion === region;
                 return (
-                  <button
+                  <Button
                     key={region}
+                    variant={isSelected ? 'default' : count > 0 ? 'secondary' : 'ghost'}
                     onClick={() => setSelectedRegion(isSelected ? null : region)}
-                    className={`absolute flex flex-col items-center transition-all ${
-                      isSelected ? 'scale-110 z-10' : ''
-                    }`}
+                    className="absolute flex flex-col items-center p-0 w-14 h-16"
                     style={{ top: pos.top, left: pos.left }}
-                    data-testid={`region-${region}`}
+                    data-testid={`button-region-${region}`}
                   >
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg transition-colors ${
-                        count > 0
-                          ? isSelected
-                            ? 'bg-primary'
-                            : 'bg-primary/80 hover:bg-primary'
-                          : 'bg-muted-foreground/50'
-                      }`}
-                    >
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg">
                       {count}
                     </div>
-                    <span className="text-xs mt-1 font-medium">{region}</span>
-                  </button>
+                    <span className="text-xs">{region}</span>
+                  </Button>
                 );
               })}
             </div>
 
             <div className="absolute bottom-2 left-2 right-2">
               <div className="flex flex-wrap gap-1 text-xs">
-                <Badge className="bg-blue-500">Axicel</Badge>
-                <Badge className="bg-green-500">Tisa-cel</Badge>
-                <Badge className="bg-purple-500">Liso-cel</Badge>
-                <Badge className="bg-orange-500">アベクマ</Badge>
-                <Badge className="bg-red-500">カービクティ</Badge>
+                <Badge className={`${DRUG_COLORS.axicel} text-white`} data-testid="badge-legend-axicel">Axicel</Badge>
+                <Badge className={`${DRUG_COLORS.tisacel} text-white`} data-testid="badge-legend-tisacel">Tisa-cel</Badge>
+                <Badge className={`${DRUG_COLORS.lisocel} text-white`} data-testid="badge-legend-lisocel">Liso-cel</Badge>
+                <Badge className={`${DRUG_COLORS.abecma} text-white`} data-testid="badge-legend-abecma">アベクマ</Badge>
+                <Badge className={`${DRUG_COLORS.carvykti} text-white`} data-testid="badge-legend-carvykti">カービクティ</Badge>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 space-y-2 overflow-auto">
+          <div className="flex-1 space-y-2 overflow-auto min-w-[300px]">
             {selectedRegion ? (
               <>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
+                <h2 className="text-lg font-semibold flex items-center gap-2" data-testid="text-region-title">
                   <MapPin className="w-5 h-5" />
                   {selectedRegion}の施設
                 </h2>
                 {facilitiesByRegion[selectedRegion]?.length === 0 ? (
-                  <p className="text-muted-foreground">該当する施設がありません</p>
+                  <p className="text-muted-foreground" data-testid="text-no-facilities">該当する施設がありません</p>
                 ) : (
                   <div className="space-y-2">
                     {facilitiesByRegion[selectedRegion]?.map((facility) => (
-                      <Card key={facility.id} className="p-3">
+                      <Card key={facility.id} className="p-3" data-testid={`card-facility-${facility.id}`}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Building2 className="w-4 h-4 text-muted-foreground" />
-                              <span className="font-medium">{facility.name}</span>
+                              <span className="font-medium" data-testid={`text-facility-name-${facility.id}`}>{facility.name}</span>
                               {facility.url && (
                                 <a
                                   href={facility.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-blue-500 hover:text-blue-700"
+                                  className="text-primary"
+                                  data-testid={`link-facility-url-${facility.id}`}
                                 >
                                   <ExternalLink className="w-4 h-4" />
                                 </a>
                               )}
                             </div>
                             {facility.address && (
-                              <p className="text-sm text-muted-foreground">{facility.address}</p>
+                              <p className="text-sm text-muted-foreground" data-testid={`text-facility-address-${facility.id}`}>{facility.address}</p>
                             )}
                             <div className="flex flex-wrap gap-1">
                               {getDrugBadges(facility).map((badge) => (
                                 <Badge
                                   key={badge.key}
                                   className={`${badge.color} text-white text-xs`}
+                                  data-testid={`badge-drug-${facility.id}-${badge.key}`}
                                 >
                                   {badge.label}
                                 </Badge>
@@ -278,7 +293,8 @@ export default function CartMap() {
                             size="icon"
                             variant="ghost"
                             onClick={() => deleteMutation.mutate(facility.id)}
-                            data-testid={`delete-facility-${facility.id}`}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-facility-${facility.id}`}
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
@@ -290,28 +306,28 @@ export default function CartMap() {
               </>
             ) : (
               <>
-                <h2 className="text-lg font-semibold">全施設一覧</h2>
+                <h2 className="text-lg font-semibold" data-testid="text-all-facilities-title">全施設一覧</h2>
                 {isLoading ? (
-                  <p>読み込み中...</p>
+                  <p data-testid="text-loading">読み込み中...</p>
                 ) : filteredFacilities.length === 0 ? (
-                  <p className="text-muted-foreground">該当する施設がありません</p>
+                  <p className="text-muted-foreground" data-testid="text-no-facilities">該当する施設がありません</p>
                 ) : (
                   <div className="space-y-2">
                     {REGIONS.map((region) => {
                       const regionFacilities = facilitiesByRegion[region];
                       if (!regionFacilities?.length) return null;
                       return (
-                        <div key={region}>
+                        <div key={region} data-testid={`section-region-${region}`}>
                           <h3 className="font-medium text-sm text-muted-foreground mb-1">
                             {region} ({regionFacilities.length}件)
                           </h3>
                           <div className="space-y-1 ml-2">
                             {regionFacilities.map((facility) => (
-                              <Card key={facility.id} className="p-2">
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className="font-medium truncate">{facility.name}</span>
-                                    <div className="flex gap-1 flex-shrink-0">
+                              <Card key={facility.id} className="p-2" data-testid={`card-facility-list-${facility.id}`}>
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                                    <span className="font-medium truncate" data-testid={`text-facility-name-list-${facility.id}`}>{facility.name}</span>
+                                    <div className="flex gap-1 flex-shrink-0 flex-wrap">
                                       {getDrugBadges(facility).map((badge) => (
                                         <Badge
                                           key={badge.key}
@@ -326,6 +342,8 @@ export default function CartMap() {
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => deleteMutation.mutate(facility.id)}
+                                    disabled={deleteMutation.isPending}
+                                    data-testid={`button-delete-facility-list-${facility.id}`}
                                   >
                                     <Trash2 className="w-4 h-4 text-destructive" />
                                   </Button>
@@ -347,6 +365,20 @@ export default function CartMap() {
   );
 }
 
+const facilityFormSchema = z.object({
+  name: z.string().min(1, '施設名を入力してください'),
+  region: z.string().min(1, '地域を選択してください'),
+  address: z.string().optional(),
+  url: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  axicel: z.boolean().default(false),
+  tisacel: z.boolean().default(false),
+  lisocel: z.boolean().default(false),
+  abecma: z.boolean().default(false),
+  carvykti: z.boolean().default(false),
+});
+
+type FacilityFormData = z.infer<typeof facilityFormSchema>;
+
 function AddFacilityDialog({
   open,
   onOpenChange,
@@ -354,67 +386,45 @@ function AddFacilityDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [name, setName] = useState('');
-  const [region, setRegion] = useState('');
-  const [address, setAddress] = useState('');
-  const [url, setUrl] = useState('');
-  const [drugs, setDrugs] = useState<Record<DrugKey, boolean>>({
-    axicel: false,
-    tisacel: false,
-    lisocel: false,
-    abecma: false,
-    carvykti: false,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: {
-      name: string;
-      region: string;
-      address?: string;
-      url?: string;
-      axicel: string;
-      tisacel: string;
-      lisocel: string;
-      abecma: string;
-      carvykti: string;
-    }) => {
-      const response = await apiRequest('POST', '/api/cart-facilities', data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cart-facilities'] });
-      onOpenChange(false);
-      resetForm();
-    },
-  });
-
-  const resetForm = () => {
-    setName('');
-    setRegion('');
-    setAddress('');
-    setUrl('');
-    setDrugs({
+  const form = useForm<FacilityFormData>({
+    resolver: zodResolver(facilityFormSchema),
+    defaultValues: {
+      name: '',
+      region: '',
+      address: '',
+      url: '',
       axicel: false,
       tisacel: false,
       lisocel: false,
       abecma: false,
       carvykti: false,
-    });
-  };
+    },
+  });
 
-  const handleSubmit = () => {
-    if (!name || !region) return;
-    createMutation.mutate({
-      name,
-      region,
-      address: address || undefined,
-      url: url || undefined,
-      axicel: drugs.axicel ? 'true' : 'false',
-      tisacel: drugs.tisacel ? 'true' : 'false',
-      lisocel: drugs.lisocel ? 'true' : 'false',
-      abecma: drugs.abecma ? 'true' : 'false',
-      carvykti: drugs.carvykti ? 'true' : 'false',
-    });
+  const createMutation = useMutation({
+    mutationFn: async (data: FacilityFormData) => {
+      const response = await apiRequest('POST', '/api/cart-facilities', {
+        name: data.name,
+        region: data.region,
+        address: data.address || undefined,
+        url: data.url || undefined,
+        axicel: data.axicel ? 'true' : 'false',
+        tisacel: data.tisacel ? 'true' : 'false',
+        lisocel: data.lisocel ? 'true' : 'false',
+        abecma: data.abecma ? 'true' : 'false',
+        carvykti: data.carvykti ? 'true' : 'false',
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart-facilities'] });
+      onOpenChange(false);
+      form.reset();
+    },
+  });
+
+  const onSubmit = (data: FacilityFormData) => {
+    createMutation.mutate(data);
   };
 
   return (
@@ -429,109 +439,155 @@ function AddFacilityDialog({
         <DialogHeader>
           <DialogTitle>CAR-T施設を追加</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="facility-name">施設名 *</Label>
-            <Input
-              id="facility-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="〇〇大学病院"
-              data-testid="input-facility-name"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>施設名 *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="〇〇大学病院"
+                      {...field}
+                      data-testid="input-facility-name"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-1">
-            <Label>地域 *</Label>
-            <Select value={region} onValueChange={setRegion}>
-              <SelectTrigger data-testid="select-region">
-                <SelectValue placeholder="地域を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {REGIONS.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="facility-address">住所</Label>
-            <Input
-              id="facility-address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="東京都〇〇区..."
-              data-testid="input-facility-address"
+            <FormField
+              control={form.control}
+              name="region"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>地域 *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-region">
+                        <SelectValue placeholder="地域を選択" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {REGIONS.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="facility-url">施設URL</Label>
-            <Input
-              id="facility-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://..."
-              data-testid="input-facility-url"
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>住所</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="東京都〇〇区..."
+                      {...field}
+                      data-testid="input-facility-address"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label>対応薬剤</Label>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">悪性リンパ腫</p>
-                <div className="flex flex-wrap gap-3">
-                  {DRUG_CATEGORIES.lymphoma.drugs.map((drug) => (
-                    <label key={drug.key} className="flex items-center gap-2">
-                      <Checkbox
-                        checked={drugs[drug.key as DrugKey]}
-                        onCheckedChange={(checked) =>
-                          setDrugs((prev) => ({ ...prev, [drug.key]: !!checked }))
-                        }
-                        data-testid={`checkbox-${drug.key}`}
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>施設URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://..."
+                      {...field}
+                      data-testid="input-facility-url"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-2">
+              <span className="text-sm font-medium">対応薬剤</span>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">悪性リンパ腫</p>
+                  <div className="flex flex-wrap gap-3">
+                    {DRUG_CATEGORIES.lymphoma.drugs.map((drug) => (
+                      <FormField
+                        key={drug.key}
+                        control={form.control}
+                        name={drug.key as DrugKey}
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid={`checkbox-${drug.key}`}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{drug.label}</FormLabel>
+                          </FormItem>
+                        )}
                       />
-                      <span className="text-sm">{drug.label}</span>
-                    </label>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">BCMA標的</p>
-                <div className="flex flex-wrap gap-3">
-                  {DRUG_CATEGORIES.bcma.drugs.map((drug) => (
-                    <label key={drug.key} className="flex items-center gap-2">
-                      <Checkbox
-                        checked={drugs[drug.key as DrugKey]}
-                        onCheckedChange={(checked) =>
-                          setDrugs((prev) => ({ ...prev, [drug.key]: !!checked }))
-                        }
-                        data-testid={`checkbox-${drug.key}`}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">BCMA標的</p>
+                  <div className="flex flex-wrap gap-3">
+                    {DRUG_CATEGORIES.bcma.drugs.map((drug) => (
+                      <FormField
+                        key={drug.key}
+                        control={form.control}
+                        name={drug.key as DrugKey}
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid={`checkbox-${drug.key}`}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{drug.label}</FormLabel>
+                          </FormItem>
+                        )}
                       />
-                      <span className="text-sm">{drug.label}</span>
-                    </label>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              キャンセル
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={!name || !region || createMutation.isPending}
-              data-testid="button-submit-facility"
-            >
-              追加
-            </Button>
-          </div>
-        </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                キャンセル
+              </Button>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                data-testid="button-submit-facility"
+              >
+                {createMutation.isPending ? '追加中...' : '追加'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
