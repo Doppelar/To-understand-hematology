@@ -27,6 +27,7 @@ Key features include:
 - **Directory**: Searchable list of professionals with detailed profiles, including sortable columns, Excel export, and standardized 8-region filtering (北海道, 東北, 関東, 中部, 関西, 中国, 四国, 九州). Includes treatment policy fields for DLBCL and FL lymphomas. Facility name input accepts any institution (universities, hospitals, clinics, research centers) with datalist suggestions for regional universities. Facility names can link to hospital/institution websites (opens in new tab).
 - **Societies**: Full CRUD operations for medical societies (users can add international societies like ASH, EHA beyond default Japanese societies JSH/JSHCT/JSMO), conferences with year-based sorting and highlighting, and society officials. Uses refetchQueries for consistent cache management and prevents duplicate submissions with isPending states. Includes SocietyForm component for add/edit operations.
 - **Quiz Feature**: Educational quiz for identifying professionals based on photos, university, or facility, with filters for region and position using the standardized 8-region list.
+- **CAR-T Facility Map**: Interactive map of Japanese CAR-T treatment facilities with disease and drug filtering. Features abstract 8-region map visualization, filtering by disease category (悪性リンパ腫, BCMA標的) and specific drugs (Axicel, Tisa-cel, Liso-cel, アベクマ, カービクティ). Full CRUD for facilities with drug support flags.
 - **Security**: Password protection for the Influencer Map page.
 
 # External Dependencies
