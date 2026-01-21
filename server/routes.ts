@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertNodeSchema, insertEdgeSchema, insertSocietySchema, insertConferenceSchema, insertSocietyOfficialSchema } from "@shared/schema";
+import { insertNodeSchema, insertEdgeSchema, insertSocietySchema, insertConferenceSchema, insertSocietyOfficialSchema, insertCartFacilitySchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -359,6 +359,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete society official" });
+    }
+  });
+
+  // CAR-T Facilities API
+  app.get("/api/cart-facilities", async (req, res) => {
+    try {
+      const facilities = await storage.getAllCartFacilities();
+      res.json(facilities);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CAR-T facilities" });
+    }
+  });
+
+  app.get("/api/cart-facilities/:id", async (req, res) => {
+    try {
+      const facility = await storage.getCartFacility(req.params.id);
+      if (!facility) {
+        return res.status(404).json({ error: "CAR-T facility not found" });
+      }
+      res.json(facility);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch CAR-T facility" });
+    }
+  });
+
+  app.post("/api/cart-facilities", async (req, res) => {
+    try {
+      const data = insertCartFacilitySchema.parse(req.body);
+      const facility = await storage.createCartFacility(data);
+      res.status(201).json(facility);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid CAR-T facility data" });
+    }
+  });
+
+  app.patch("/api/cart-facilities/:id", async (req, res) => {
+    try {
+      const facility = await storage.updateCartFacility(req.params.id, req.body);
+      if (!facility) {
+        return res.status(404).json({ error: "CAR-T facility not found" });
+      }
+      res.json(facility);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update CAR-T facility" });
+    }
+  });
+
+  app.delete("/api/cart-facilities/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteCartFacility(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "CAR-T facility not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete CAR-T facility" });
     }
   });
 

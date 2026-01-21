@@ -93,6 +93,7 @@ export class MemStorage implements IStorage {
       id,
       name: insertNode.name,
       facilityName: insertNode.facilityName ?? null,
+      facilityUrl: insertNode.facilityUrl ?? null,
       position: insertNode.position ?? null,
       career: insertNode.career ?? null,
       specialty: insertNode.specialty ?? null,
@@ -102,6 +103,8 @@ export class MemStorage implements IStorage {
       graduationYear: insertNode.graduationYear ?? null,
       appointmentDate: insertNode.appointmentDate ?? null,
       retirementDate: insertNode.retirementDate ?? null,
+      dlbclTreatment: insertNode.dlbclTreatment ?? null,
+      flTreatment: insertNode.flTreatment ?? null,
       positionX: "0",
       positionY: "0"
     };
