@@ -98,6 +98,7 @@ export const cartFacilities = pgTable("cart_facilities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   region: text("region").notNull(),
+  prefecture: text("prefecture"),
   address: text("address"),
   url: text("url"),
   // 悪性リンパ腫系薬剤
