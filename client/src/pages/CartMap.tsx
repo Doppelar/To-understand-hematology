@@ -31,7 +31,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Plus, Trash2, ExternalLink, Building2 } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Building2, Pencil } from 'lucide-react';
 import type { CartFacility } from '@shared/schema';
 
 const REGIONS = ['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州', '沖縄'] as const;
@@ -103,6 +103,7 @@ export default function CartMap() {
   const [selectedDrug, setSelectedDrug] = useState<DrugKey | 'all'>('all');
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingFacility, setEditingFacility] = useState<CartFacility | null>(null);
 
   const { data: facilities = [], isLoading } = useQuery<CartFacility[]>({
     queryKey: ['/api/cart-facilities'],
@@ -279,6 +280,7 @@ export default function CartMap() {
                         key={facility.id}
                         facility={facility}
                         getDrugBadges={getDrugBadges}
+                        onEdit={() => setEditingFacility(facility)}
                         onDelete={() => deleteMutation.mutate(facility.id)}
                         isDeleting={deleteMutation.isPending}
                       />
@@ -347,6 +349,13 @@ export default function CartMap() {
           </div>
         </div>
       </div>
+
+      {editingFacility && (
+        <EditFacilityDialog
+          facility={editingFacility}
+          onClose={() => setEditingFacility(null)}
+        />
+      )}
     </div>
   );
 }
@@ -482,11 +491,13 @@ function JapanMap({
 function FacilityCard({
   facility,
   getDrugBadges,
+  onEdit,
   onDelete,
   isDeleting,
 }: {
   facility: CartFacility;
   getDrugBadges: (f: CartFacility) => { key: DrugKey; label: string; color: string }[];
+  onEdit: () => void;
   onDelete: () => void;
   isDeleting: boolean;
 }) {
@@ -529,15 +540,25 @@ function FacilityCard({
             ))}
           </div>
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={onDelete}
-          disabled={isDeleting}
-          data-testid={`button-delete-facility-${facility.id}`}
-        >
-          <Trash2 className="w-4 h-4 text-destructive" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onEdit}
+            data-testid={`button-edit-facility-${facility.id}`}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onDelete}
+            disabled={isDeleting}
+            data-testid={`button-delete-facility-${facility.id}`}
+          >
+            <Trash2 className="w-4 h-4 text-destructive" />
+          </Button>
+        </div>
       </div>
     </Card>
   );
@@ -796,6 +817,246 @@ function AddFacilityDialog({
                 data-testid="button-submit-facility"
               >
                 {createMutation.isPending ? '追加中...' : '追加'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditFacilityDialog({
+  facility,
+  onClose,
+}: {
+  facility: CartFacility;
+  onClose: () => void;
+}) {
+  const form = useForm<FacilityFormData>({
+    resolver: zodResolver(facilityFormSchema),
+    defaultValues: {
+      name: facility.name,
+      region: facility.region,
+      prefecture: facility.prefecture || '',
+      address: facility.address || '',
+      url: facility.url || '',
+      axicel: facility.axicel === 'true',
+      tisacel: facility.tisacel === 'true',
+      lisocel: facility.lisocel === 'true',
+      abecma: facility.abecma === 'true',
+      carvykti: facility.carvykti === 'true',
+    },
+  });
+
+  const selectedRegion = form.watch('region');
+  const availablePrefectures = selectedRegion ? PREFECTURES_BY_REGION[selectedRegion] || [] : ALL_PREFECTURES;
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: FacilityFormData) => {
+      const response = await apiRequest('PATCH', `/api/cart-facilities/${facility.id}`, {
+        name: data.name,
+        region: data.region,
+        prefecture: data.prefecture || undefined,
+        address: data.address || undefined,
+        url: data.url || undefined,
+        axicel: data.axicel ? 'true' : 'false',
+        tisacel: data.tisacel ? 'true' : 'false',
+        lisocel: data.lisocel ? 'true' : 'false',
+        abecma: data.abecma ? 'true' : 'false',
+        carvykti: data.carvykti ? 'true' : 'false',
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart-facilities'] });
+      onClose();
+    },
+  });
+
+  const onSubmit = (data: FacilityFormData) => {
+    updateMutation.mutate(data);
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>CAR-T施設を編集</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>施設名 *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="〇〇大学病院"
+                      {...field}
+                      data-testid="input-edit-facility-name"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="region"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>地域 *</FormLabel>
+                  <Select onValueChange={(v) => {
+                    field.onChange(v);
+                    form.setValue('prefecture', '');
+                  }} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-edit-region">
+                        <SelectValue placeholder="地域を選択" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {REGIONS.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="prefecture"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>都道府県</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-edit-prefecture">
+                        <SelectValue placeholder="都道府県を選択" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {availablePrefectures.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>住所</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="東京都〇〇区..."
+                      {...field}
+                      data-testid="input-edit-facility-address"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>施設URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://..."
+                      {...field}
+                      data-testid="input-edit-facility-url"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-2">
+              <span className="text-sm font-medium">対応薬剤</span>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">悪性リンパ腫</p>
+                  <div className="flex flex-wrap gap-3">
+                    {DRUG_CATEGORIES.lymphoma.drugs.map((drug) => (
+                      <FormField
+                        key={drug.key}
+                        control={form.control}
+                        name={drug.key as DrugKey}
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid={`checkbox-edit-${drug.key}`}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{drug.label}</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">BCMA標的</p>
+                  <div className="flex flex-wrap gap-3">
+                    {DRUG_CATEGORIES.bcma.drugs.map((drug) => (
+                      <FormField
+                        key={drug.key}
+                        control={form.control}
+                        name={drug.key as DrugKey}
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid={`checkbox-edit-${drug.key}`}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{drug.label}</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                キャンセル
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateMutation.isPending}
+                data-testid="button-update-facility"
+              >
+                {updateMutation.isPending ? '更新中...' : '更新'}
               </Button>
             </div>
           </form>
