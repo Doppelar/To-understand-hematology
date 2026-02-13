@@ -14,7 +14,7 @@ type FilterBarProps = {
 };
 
 const DEFAULT_SPECIALTIES = ['MCL', '移植', '悪性リンパ腫', 'DLBCL', 'FL', 'AML', 'ALL', 'CML'];
-const REGIONS = ['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州'];
+const REGIONS = ['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州', '海外'];
 
 export default function FilterBar({
   activeSpecialties,

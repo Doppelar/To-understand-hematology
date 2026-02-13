@@ -224,6 +224,7 @@ export default function EditNodeDialog({
                 <SelectItem value="中国">中国</SelectItem>
                 <SelectItem value="四国">四国</SelectItem>
                 <SelectItem value="九州">九州</SelectItem>
+                <SelectItem value="海外">海外</SelectItem>
               </SelectContent>
             </Select>
           </div>

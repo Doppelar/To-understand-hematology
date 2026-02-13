@@ -56,7 +56,7 @@ export default function Directory() {
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [, setLocation] = useLocation();
 
-  const regions = ['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州'];
+  const regions = ['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州', '海外'];
 
   const filteredPeople = useMemo(() => {
     const filtered = people.filter(person => {

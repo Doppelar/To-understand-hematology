@@ -265,7 +265,7 @@ export default function Quiz() {
                 対象地域を選択してください
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州'].map((region) => (
+                {['北海道', '東北', '関東', '中部', '関西', '中国', '四国', '九州', '海外'].map((region) => (
                   <div key={region} className="flex items-center gap-2">
                     <Checkbox
                       id={`region-${region}`}
