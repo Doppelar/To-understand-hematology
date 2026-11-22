@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import type { ReactNode } from "react";
+import { upload } from "@vercel/blob/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,24 +41,13 @@ export function ObjectUploader({
 
     setIsUploading(true);
     try {
-      const uploadParamsResponse = await fetch('/api/objects/upload', {
-        method: 'POST',
-      });
-      const { uploadURL } = await uploadParamsResponse.json();
-
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
+      const blob = await upload(`photos/${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob/upload",
+        contentType: file.type || undefined,
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error('Upload failed');
-      }
-
-      onComplete?.(uploadURL);
+      onComplete?.(blob.url);
       
       toast({
         title: "アップロード完了",

@@ -3,45 +3,49 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertNodeSchema, insertEdgeSchema, insertSocietySchema, insertConferenceSchema, insertSocietyOfficialSchema, insertCartFacilitySchema } from "@shared/schema";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+
+function isBlobUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Object storage routes for public file uploading
-  app.get("/objects/:objectPath(*)", async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
+  // Photo uploads go straight from the browser to Vercel Blob.
+  // This endpoint issues the short-lived client upload token.
+  app.post("/api/blob/upload", async (req, res) => {
     try {
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      objectStorageService.downloadObject(objectFile, res);
+      const result = await handleUpload({
+        body: req.body as HandleUploadBody,
+        request: req,
+        onBeforeGenerateToken: async () => ({
+          allowedContentTypes: ["image/png", "image/jpeg", "image/gif", "image/webp", "image/heic", "image/heif"],
+          maximumSizeInBytes: 10 * 1024 * 1024,
+          addRandomSuffix: true,
+        }),
+        onUploadCompleted: async () => {},
+      });
+      res.json(result);
     } catch (error) {
-      console.error("Error accessing object:", error);
-      if (error instanceof ObjectNotFoundError) {
-        return res.sendStatus(404);
-      }
-      return res.sendStatus(500);
+      console.error("Error issuing blob upload token:", error);
+      res.status(400).json({ error: "Upload not allowed" });
     }
   });
 
-  app.post("/api/objects/upload", async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    res.json({ uploadURL });
-  });
-
+  // Kept for the existing client flow: accepts only Vercel Blob URLs.
   app.put("/api/photos", async (req, res) => {
-    if (!req.body.photoURL) {
+    const photoURL = req.body?.photoURL;
+    if (typeof photoURL !== "string" || !isBlobUrl(photoURL)) {
       return res.status(400).json({ error: "photoURL is required" });
     }
-    try {
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(req.body.photoURL);
-      res.status(200).json({ objectPath });
-    } catch (error) {
-      console.error("Error setting photo:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
+    res.status(200).json({ objectPath: photoURL });
   });
-  
+
   // Nodes API
   app.get("/api/nodes", async (req, res) => {
     try {
